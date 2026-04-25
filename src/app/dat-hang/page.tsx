@@ -13,11 +13,17 @@ import {
   MessageSquare,
   Package,
   Hash,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { products } from "@/data/products";
 
 export default function OrderPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [rfqCode, setRfqCode] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     company: "",
@@ -29,11 +35,45 @@ export default function OrderPage() {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In Phase 2, this will send to the backend
-    console.log("Order request:", formData);
-    setSubmitted(true);
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/rfq", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [
+            {
+              productName: formData.product,
+              quantity: parseInt(formData.quantity) || 1,
+              specification: formData.quantity,
+            },
+          ],
+          contactName: formData.name,
+          companyName: formData.company,
+          contactPhone: formData.phone,
+          contactEmail: formData.email,
+          deliveryLocation: formData.location,
+          message: formData.message,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Có lỗi xảy ra");
+      }
+
+      setRfqCode(data.rfqCode);
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -43,31 +83,34 @@ export default function OrderPage() {
           <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
             <CheckCircle2 size={40} className="text-green-600" />
           </div>
-          <h2 className="text-2xl font-extrabold text-gray-800 mb-3">
+          <h2 className="text-2xl font-extrabold text-gray-800 mb-2">
             Yêu cầu đã được gửi!
           </h2>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-50 text-green-700 font-mono font-bold text-lg mb-4">
+            <FileText size={18} /> {rfqCode}
+          </div>
           <p className="text-gray-500 mb-6">
             Cảm ơn bạn đã quan tâm đến sản phẩm AgriCoX. Đội ngũ sales của 
             chúng tôi sẽ liên hệ trong vòng 2 giờ làm việc.
           </p>
-          <button
-            onClick={() => {
-              setSubmitted(false);
-              setFormData({
-                name: "",
-                company: "",
-                phone: "",
-                email: "",
-                product: "",
-                quantity: "",
-                location: "",
-                message: "",
-              });
-            }}
-            className="btn-secondary"
-          >
-            Gửi yêu cầu khác
-          </button>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => {
+                setSubmitted(false);
+                setRfqCode("");
+                setFormData({
+                  name: "", company: "", phone: "", email: "",
+                  product: "", quantity: "", location: "", message: "",
+                });
+              }}
+              className="btn-secondary"
+            >
+              Gửi yêu cầu khác
+            </button>
+            <Link href="/san-pham" className="btn-primary">
+              Xem sản phẩm
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -101,158 +144,127 @@ export default function OrderPage() {
       <section className="section bg-white">
         <div className="container-custom max-w-3xl">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Error */}
+            {error && (
+              <div className="p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3 text-red-700">
+                <AlertCircle size={20} />
+                <span className="text-sm font-medium">{error}</span>
+              </div>
+            )}
+
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Name */}
               <div>
                 <label className="form-label">
-                  <User size={14} className="inline mr-1.5" />
-                  Họ và tên *
+                  <User size={14} className="inline mr-1.5" /> Họ và tên *
                 </label>
                 <input
-                  type="text"
-                  required
-                  placeholder="Nguyễn Văn A"
+                  type="text" required placeholder="Nguyễn Văn A"
                   value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="form-input"
                 />
               </div>
-
-              {/* Company */}
               <div>
                 <label className="form-label">
-                  <Building2 size={14} className="inline mr-1.5" />
-                  Công ty
+                  <Building2 size={14} className="inline mr-1.5" /> Công ty
                 </label>
                 <input
-                  type="text"
-                  placeholder="Tên công ty / trang trại"
+                  type="text" placeholder="Tên công ty / trang trại"
                   value={formData.company}
-                  onChange={(e) =>
-                    setFormData({ ...formData, company: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
                   className="form-input"
                 />
               </div>
-
-              {/* Phone */}
               <div>
                 <label className="form-label">
-                  <Phone size={14} className="inline mr-1.5" />
-                  Số điện thoại *
+                  <Phone size={14} className="inline mr-1.5" /> Số điện thoại *
                 </label>
                 <input
-                  type="tel"
-                  required
-                  placeholder="0909 xxx xxx"
+                  type="tel" required placeholder="0909 xxx xxx"
                   value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   className="form-input"
                 />
               </div>
-
-              {/* Email */}
               <div>
                 <label className="form-label">
-                  <Mail size={14} className="inline mr-1.5" />
-                  Email *
+                  <Mail size={14} className="inline mr-1.5" /> Email
                 </label>
                 <input
-                  type="email"
-                  required
-                  placeholder="email@company.com"
+                  type="email" placeholder="email@company.com"
                   value={formData.email}
-                  onChange={(e) =>
-                    setFormData({ ...formData, email: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="form-input"
                 />
               </div>
             </div>
 
-            {/* Product */}
             <div>
               <label className="form-label">
-                <Package size={14} className="inline mr-1.5" />
-                Sản phẩm quan tâm *
+                <Package size={14} className="inline mr-1.5" /> Sản phẩm quan tâm *
               </label>
               <select
                 required
                 value={formData.product}
-                onChange={(e) =>
-                  setFormData({ ...formData, product: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, product: e.target.value })}
                 className="form-input"
               >
                 <option value="">-- Chọn sản phẩm --</option>
                 {products.map((p) => (
-                  <option key={p.id} value={p.name}>
-                    {p.name}
-                  </option>
+                  <option key={p.id} value={p.name}>{p.name}</option>
                 ))}
                 <option value="Khác">Sản phẩm khác / Tư vấn</option>
               </select>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Quantity */}
               <div>
                 <label className="form-label">
-                  <Hash size={14} className="inline mr-1.5" />
-                  Số lượng dự kiến
+                  <Hash size={14} className="inline mr-1.5" /> Số lượng dự kiến
                 </label>
                 <input
-                  type="text"
-                  placeholder="VD: 2,400 bao / 1 container"
+                  type="text" placeholder="VD: 2,400 bao / 1 container"
                   value={formData.quantity}
-                  onChange={(e) =>
-                    setFormData({ ...formData, quantity: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                   className="form-input"
                 />
               </div>
-
-              {/* Location */}
               <div>
                 <label className="form-label">
-                  <MapPin size={14} className="inline mr-1.5" />
-                  Địa điểm giao hàng
+                  <MapPin size={14} className="inline mr-1.5" /> Địa điểm giao hàng
                 </label>
                 <input
-                  type="text"
-                  placeholder="Tỉnh / Thành phố / Quốc gia"
+                  type="text" placeholder="Tỉnh / Thành phố / Quốc gia"
                   value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="form-input"
                 />
               </div>
             </div>
 
-            {/* Message */}
             <div>
               <label className="form-label">
-                <MessageSquare size={14} className="inline mr-1.5" />
-                Nội dung yêu cầu
+                <MessageSquare size={14} className="inline mr-1.5" /> Nội dung yêu cầu
               </label>
               <textarea
                 rows={4}
                 placeholder="Mô tả chi tiết yêu cầu, quy cách, thời gian giao hàng mong muốn..."
                 value={formData.message}
-                onChange={(e) =>
-                  setFormData({ ...formData, message: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 className="form-input resize-none"
               />
             </div>
 
-            <button type="submit" className="btn-primary w-full !py-4 !text-base">
-              <Send size={18} /> Gửi yêu cầu báo giá
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn-primary w-full !py-4 !text-base disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <><Loader2 size={18} className="animate-spin" /> Đang gửi...</>
+              ) : (
+                <><Send size={18} /> Gửi yêu cầu báo giá</>
+              )}
             </button>
 
             <p className="text-center text-sm text-gray-400">

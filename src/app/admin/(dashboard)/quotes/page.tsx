@@ -10,6 +10,7 @@ import {
   Mail,
   Search,
 } from "lucide-react";
+import { QuoteActions } from "./QuoteActions";
 
 const statusColors: Record<string, string> = {
   NEW: "bg-blue-100 text-blue-700",
@@ -32,12 +33,18 @@ const statusLabels: Record<string, string> = {
 };
 
 export default async function AdminQuotesPage() {
-  const quotes = await prisma.quoteRequest.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      assignee: { select: { name: true } },
-    },
-  });
+  const [quotes, salesUsers] = await Promise.all([
+    prisma.quoteRequest.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        assignee: { select: { id: true, name: true } },
+      },
+    }),
+    prisma.user.findMany({
+      where: { role: { in: ["SALES", "ADMIN"] }, isActive: true },
+      select: { id: true, name: true, role: true },
+    }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -178,16 +185,19 @@ export default async function AdminQuotesPage() {
               </div>
 
               {q.message && (
-                <div className="px-4 py-3 rounded-xl bg-gray-50 text-sm text-gray-600 italic border-l-4 border-orange-300">
+                <div className="px-4 py-3 rounded-xl bg-gray-50 text-sm text-gray-600 italic border-l-4 border-orange-300 mb-4">
                   {q.message}
                 </div>
               )}
 
-              {q.assignee && (
-                <div className="mt-3 text-xs text-gray-400">
-                  Phụ trách: <span className="font-medium text-gray-600">{q.assignee.name}</span>
-                </div>
-              )}
+              {/* Actions */}
+              <QuoteActions
+                quoteId={q.id}
+                currentStatus={q.status}
+                assigneeId={q.assignedTo}
+                assigneeName={q.assignee?.name}
+                salesUsers={salesUsers}
+              />
             </div>
           );
         })}

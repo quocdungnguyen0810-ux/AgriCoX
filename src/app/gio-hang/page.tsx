@@ -15,13 +15,16 @@ import {
   Building2,
   Phone,
   Mail,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { generateRFQCode } from "@/lib/utils";
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart } = useCart();
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [rfqCode, setRfqCode] = useState("");
   const [contactInfo, setContactInfo] = useState({
     name: "",
@@ -31,12 +34,43 @@ export default function CartPage() {
     notes: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const code = generateRFQCode();
-    setRfqCode(code);
-    console.log("RFQ submitted:", { code, items, contactInfo });
-    setSubmitted(true);
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await fetch("/api/rfq", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((item) => ({
+            productName: item.productName,
+            quantity: item.quantity,
+            specification: item.specification,
+          })),
+          contactName: contactInfo.name,
+          companyName: contactInfo.company,
+          contactPhone: contactInfo.phone,
+          contactEmail: contactInfo.email,
+          message: contactInfo.notes,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Có lỗi xảy ra");
+      }
+
+      setRfqCode(data.rfqCode);
+      setSubmitted(true);
+      clearCart();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -101,6 +135,14 @@ export default function CartPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
+              {/* Error message */}
+              {error && (
+                <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 flex items-center gap-3 text-red-700">
+                  <AlertCircle size={20} />
+                  <span className="text-sm font-medium">{error}</span>
+                </div>
+              )}
+
               {/* Cart items */}
               <div className="space-y-4 mb-8">
                 <div className="flex items-center justify-between mb-2">
@@ -230,11 +272,10 @@ export default function CartPage() {
                   </div>
                   <div>
                     <label className="form-label">
-                      <Mail size={14} className="inline mr-1" /> Email *
+                      <Mail size={14} className="inline mr-1" /> Email
                     </label>
                     <input
                       type="email"
-                      required
                       value={contactInfo.email}
                       onChange={(e) =>
                         setContactInfo({ ...contactInfo, email: e.target.value })
@@ -258,8 +299,20 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary w-full !py-4 !text-base">
-                <Send size={18} /> Gửi yêu cầu báo giá
+              <button
+                type="submit"
+                disabled={loading}
+                className="btn-primary w-full !py-4 !text-base disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" /> Đang gửi...
+                  </>
+                ) : (
+                  <>
+                    <Send size={18} /> Gửi yêu cầu báo giá
+                  </>
+                )}
               </button>
             </form>
           )}
