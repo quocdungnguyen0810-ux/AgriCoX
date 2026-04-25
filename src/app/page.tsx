@@ -19,6 +19,7 @@ import {
 import { products } from "@/data/products";
 import { stats, strengths } from "@/data/content";
 import { useCart } from "@/context/CartContext";
+import { useT } from "@/context/LanguageContext";
 
 const iconMap: Record<string, React.ElementType> = {
   Leaf, Shield, Factory, Globe, Sprout, Recycle,
@@ -45,6 +46,7 @@ function useReveal() {
 export default function HomePage() {
   const containerRef = useReveal();
   const { addItem } = useCart();
+  const t = useT();
   const featuredProducts = products.filter((p) => p.featured);
 
   return (
@@ -73,33 +75,30 @@ export default function HomePage() {
             <div className="text-white">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-sm mb-6 animate-fade-in-up">
                 <Leaf size={16} className="text-green-300" />
-                <span className="text-green-200">Thương hiệu AgriCoX</span>
+                <span className="text-green-200">{t.home.badge}</span>
               </div>
 
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight mb-6 animate-fade-in-up delay-100">
-                Giải pháp giá thể
+                {t.home.heroTitle1}
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-yellow-warm">
-                  mụn dừa
+                  {t.home.heroTitle2}
                 </span>{" "}
-                & công nghệ
+                {t.home.heroTitle3}
                 <br />
-                nông nghiệp{" "}
-                <span className="text-brown-300">bền vững</span>
+                <span className="text-brown-300">{t.home.heroTitle4}</span>
               </h1>
 
               <p className="text-lg text-green-200 mb-8 leading-relaxed max-w-xl animate-fade-in-up delay-200">
-                GreenPeat cung cấp cocopeat growbag, đất mụn dừa xử lý đạt chuẩn
-                xuất khẩu – phù hợp nhà kính, thủy canh, nông nghiệp công nghệ
-                cao tại 15+ quốc gia trên thế giới.
+                {t.home.heroDesc}
               </p>
 
               <div className="flex flex-wrap gap-4 mb-10 animate-fade-in-up delay-300">
                 <Link href="/dat-hang" className="btn-accent !text-base !py-3.5 !px-7">
-                  Nhận báo giá <ArrowRight size={18} />
+                  {t.home.ctaQuote} <ArrowRight size={18} />
                 </Link>
                 <Link href="/san-pham" className="btn-secondary !border-white/30 !text-white hover:!bg-white/10 !text-base !py-3.5 !px-7">
-                  Xem sản phẩm
+                  {t.home.ctaProducts}
                 </Link>
               </div>
 
@@ -138,16 +137,16 @@ export default function HomePage() {
                     <div className="absolute inset-0 bg-gradient-to-t from-green-900/70 via-green-900/20 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
                       <h3 className="text-2xl font-bold text-white mb-1">
-                        AgriCoX Growbag
+                        {t.home.productBadge}
                       </h3>
                       <p className="text-green-200 text-sm mb-3">
-                        Premium Cocopeat Substrate
+                        {t.home.premium}
                       </p>
                       <div className="flex justify-center gap-3">
                         {[
                           { label: "EC", value: "< 0.5" },
                           { label: "pH", value: "5.5-6.5" },
-                          { label: "Ẩm", value: "< 20%" },
+                          { label: t.lang === "en" ? "Moisture" : "Ẩm", value: "< 20%" },
                         ].map((spec) => (
                           <div
                             key={spec.label}
@@ -164,10 +163,10 @@ export default function HomePage() {
                   </div>
                   {/* Floating badges */}
                   <div className="absolute -top-2 -right-2 px-4 py-2 rounded-xl glass text-sm font-bold text-green-700 animate-float" style={{ animationDelay: "0.5s" }}>
-                    🌿 100% Organic
+                    🌿 {t.home.organic}
                   </div>
                   <div className="absolute -bottom-2 -left-2 px-4 py-2 rounded-xl glass text-sm font-bold text-brown-600 animate-float" style={{ animationDelay: "1s" }}>
-                    📦 Xuất khẩu 15+ nước
+                    📦 {t.home.export15}
                   </div>
                 </div>
               </div>
@@ -213,12 +212,11 @@ export default function HomePage() {
         <div className="container-custom">
           <div className="text-center mb-12">
             <h2 className="section-title reveal">
-              Tại sao chọn{" "}
-              <span className="gradient-text">GreenPeat?</span>
+              {t.home.whyTitle1}{" "}
+              <span className="gradient-text">{t.home.whyTitle2}?</span>
             </h2>
             <p className="section-subtitle reveal">
-              Chúng tôi tự hào là đối tác tin cậy trong lĩnh vực giá thể mụn dừa,
-              mang đến giải pháp toàn diện cho nông nghiệp hiện đại.
+              {t.home.whyDesc}
             </p>
           </div>
 
@@ -252,12 +250,11 @@ export default function HomePage() {
         <div className="container-custom">
           <div className="text-center mb-12">
             <h2 className="section-title reveal">
-              Sản phẩm{" "}
-              <span className="gradient-text">nổi bật</span>
+              {t.home.featuredTitle1}{" "}
+              <span className="gradient-text">{t.home.featuredTitle2}</span>
             </h2>
             <p className="section-subtitle reveal">
-              Khám phá các dòng sản phẩm giá thể mụn dừa chất lượng cao, 
-              được thiết kế tối ưu cho từng ứng dụng nông nghiệp.
+              {t.products.desc}
             </p>
           </div>
 
@@ -314,7 +311,7 @@ export default function HomePage() {
                       href={`/san-pham/${product.slug}`}
                       className="flex-1 text-center text-sm py-2.5 rounded-lg bg-green-50 text-green-700 font-semibold hover:bg-green-100 transition-colors"
                     >
-                      Chi tiết
+                      {t.home.viewDetail}
                     </Link>
                     <button
                       onClick={() =>
@@ -328,7 +325,7 @@ export default function HomePage() {
                       }
                       className="flex-1 text-center text-sm py-2.5 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition-colors"
                     >
-                      Thêm RFQ
+                      {t.lang === "en" ? "Add RFQ" : "Thêm RFQ"}
                     </button>
                   </div>
                 </div>
@@ -338,7 +335,7 @@ export default function HomePage() {
 
           <div className="text-center mt-10 reveal">
             <Link href="/san-pham" className="btn-secondary">
-              Xem tất cả sản phẩm <ChevronRight size={18} />
+              {t.home.viewAll} <ChevronRight size={18} />
             </Link>
           </div>
         </div>
@@ -350,22 +347,28 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="reveal">
               <h2 className="section-title !text-left">
-                Quy trình sản xuất{" "}
-                <span className="gradient-text">đạt chuẩn</span>
+                {t.lang === "en" ? "Production Process" : "Quy trình sản xuất"}{" "}
+                <span className="gradient-text">{t.lang === "en" ? "Certified" : "đạt chuẩn"}</span>
               </h2>
               <p className="text-gray-500 leading-relaxed mb-6">
-                Mỗi sản phẩm AgriCoX đều trải qua quy trình xử lý 8 bước nghiêm
-                ngặt, từ thu gom nguyên liệu đến kiểm định chất lượng cuối cùng.
-                Đảm bảo EC thấp, pH ổn định, không chứa mầm bệnh.
+                {t.lang === "en"
+                  ? "Every AgriCoX product undergoes a rigorous 8-step processing, from raw material collection to final quality inspection. Ensuring low EC, stable pH, and pathogen-free."
+                  : "Mỗi sản phẩm AgriCoX đều trải qua quy trình xử lý 8 bước nghiêm ngặt, từ thu gom nguyên liệu đến kiểm định chất lượng cuối cùng. Đảm bảo EC thấp, pH ổn định, không chứa mầm bệnh."}
               </p>
               <div className="space-y-3 mb-8">
-                {[
+                {(t.lang === "en" ? [
+                  "Raw material collection & sorting",
+                  "Washing & EC treatment, calcium buffering",
+                  "Composting & structural stabilization",
+                  "Quality testing via in-house lab",
+                  "Packaging & certified storage",
+                ] : [
                   "Thu gom & phân loại nguyên liệu",
                   "Rửa sạch & xử lý EC, buffering calcium",
                   "Ủ hoai & ổn định cấu trúc",
                   "Kiểm tra chất lượng bằng lab nội bộ",
                   "Đóng gói & bảo quản đạt chuẩn",
-                ].map((step, i) => (
+                ]).map((step, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <CheckCircle2 size={20} className="text-green-500 shrink-0" />
                     <span className="text-gray-700">{step}</span>
@@ -373,7 +376,7 @@ export default function HomePage() {
                 ))}
               </div>
               <Link href="/cong-nghe" className="btn-primary">
-                Tìm hiểu công nghệ <ArrowRight size={18} />
+                {t.lang === "en" ? "Learn about technology" : "Tìm hiểu công nghệ"} <ArrowRight size={18} />
               </Link>
             </div>
 
@@ -417,7 +420,7 @@ export default function HomePage() {
         <div className="container-custom relative z-10">
           <div className="text-center mb-12">
             <h2 className="section-title reveal !text-white">
-              Khách hàng nói gì về chúng tôi
+              {t.lang === "en" ? "What our clients say" : "Khách hàng nói gì về chúng tôi"}
             </h2>
           </div>
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
@@ -464,21 +467,20 @@ export default function HomePage() {
             <div className="absolute inset-0 bg-gradient-to-r from-brown-700/80 to-brown-600/80" />
             <div className="relative z-10">
               <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-4">
-                Sẵn sàng nâng tầm nông nghiệp?
+                {t.home.ctaTitle1} <span>{t.home.ctaTitle2}</span>
               </h2>
               <p className="text-brown-100 text-lg mb-8 max-w-2xl mx-auto">
-                Liên hệ ngay để nhận tư vấn chuyên sâu và báo giá tốt nhất cho
-                dự án nông nghiệp của bạn.
+                {t.home.ctaDesc}
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Link href="/dat-hang" className="btn-accent !text-base !py-3.5 !px-8">
-                  Nhận báo giá miễn phí <ArrowRight size={18} />
+                  {t.home.ctaBtn} <ArrowRight size={18} />
                 </Link>
                 <a
                   href="tel:+842751234567"
                   className="btn-secondary !border-white/40 !text-white hover:!bg-white/20 !text-base !py-3.5 !px-8"
                 >
-                  <Phone size={18} /> Gọi ngay: 1900 636 868
+                  <Phone size={18} /> {t.home.ctaCall}: 1900 636 868
                 </a>
               </div>
             </div>

@@ -19,9 +19,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useT } from "@/context/LanguageContext";
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart } = useCart();
+  const t = useT();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -81,21 +83,20 @@ export default function CartPage() {
             <CheckCircle2 size={40} className="text-green-600" />
           </div>
           <h2 className="text-2xl font-extrabold text-gray-800 mb-2">
-            Yêu cầu báo giá đã gửi!
+            {t.cart.successTitle}
           </h2>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-50 text-green-700 font-mono font-bold text-lg mb-4">
             <FileText size={18} /> {rfqCode}
           </div>
           <p className="text-gray-500 mb-6">
-            Vui lòng lưu mã RFQ trên để theo dõi. Đội ngũ sales sẽ liên hệ 
-            trong vòng 2 giờ làm việc.
+            {t.cart.successDesc}
           </p>
           <div className="flex gap-3 justify-center">
             <Link href="/san-pham" className="btn-primary">
-              Tiếp tục mua sắm
+              {t.cart.continueShopping}
             </Link>
             <Link href="/" className="btn-secondary">
-              Về trang chủ
+              {t.cart.goHome}
             </Link>
           </div>
         </div>
@@ -110,10 +111,10 @@ export default function CartPage() {
         <div className="container-custom relative z-10 text-center">
           <h1 className="text-3xl md:text-4xl font-extrabold mb-2">
             <ShoppingCart size={32} className="inline mr-2 -mt-1" />
-            Giỏ hàng báo giá
+            {t.cart.title}
           </h1>
           <p className="text-green-200">
-            Xem lại sản phẩm và gửi yêu cầu báo giá
+            {t.cart.subtitle}
           </p>
         </div>
       </section>
@@ -124,13 +125,13 @@ export default function CartPage() {
             <div className="text-center py-20">
               <ShoppingCart size={64} className="text-gray-300 mx-auto mb-4" />
               <h2 className="text-xl font-bold text-gray-600 mb-2">
-                Giỏ hàng trống
+                {t.cart.empty}
               </h2>
               <p className="text-gray-400 mb-6">
-                Hãy thêm sản phẩm từ danh mục để bắt đầu.
+                {t.cart.emptyDesc}
               </p>
               <Link href="/san-pham" className="btn-primary">
-                <ArrowLeft size={18} /> Xem sản phẩm
+                <ArrowLeft size={18} /> {t.cart.viewProducts}
               </Link>
             </div>
           ) : (
@@ -147,14 +148,14 @@ export default function CartPage() {
               <div className="space-y-4 mb-8">
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="text-xl font-bold text-gray-800">
-                    Sản phẩm ({items.length})
+                    {t.cart.items} ({items.length})
                   </h2>
                   <button
                     type="button"
                     onClick={clearCart}
                     className="text-sm text-red-500 hover:text-red-600"
                   >
-                    Xóa tất cả
+                    {t.cart.clearAll}
                   </button>
                 </div>
 
@@ -220,12 +221,12 @@ export default function CartPage() {
               {/* Contact info */}
               <div className="card p-6 mb-6">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">
-                  Thông tin liên hệ
+                  {t.cart.contactInfo}
                 </h3>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="form-label">
-                      <User size={14} className="inline mr-1" /> Họ tên *
+                      <User size={14} className="inline mr-1" /> {t.cart.fullName} *
                     </label>
                     <input
                       type="text"
@@ -240,7 +241,7 @@ export default function CartPage() {
                   </div>
                   <div>
                     <label className="form-label">
-                      <Building2 size={14} className="inline mr-1" /> Công ty
+                      <Building2 size={14} className="inline mr-1" /> {t.cart.company}
                     </label>
                     <input
                       type="text"
@@ -257,7 +258,7 @@ export default function CartPage() {
                   </div>
                   <div>
                     <label className="form-label">
-                      <Phone size={14} className="inline mr-1" /> Số điện thoại *
+                      <Phone size={14} className="inline mr-1" /> {t.cart.phone} *
                     </label>
                     <input
                       type="tel"
@@ -272,7 +273,7 @@ export default function CartPage() {
                   </div>
                   <div>
                     <label className="form-label">
-                      <Mail size={14} className="inline mr-1" /> Email
+                      <Mail size={14} className="inline mr-1" /> {t.cart.email}
                     </label>
                     <input
                       type="email"
@@ -286,7 +287,7 @@ export default function CartPage() {
                   </div>
                 </div>
                 <div className="mt-4">
-                  <label className="form-label">Ghi chú thêm</label>
+                  <label className="form-label">{t.cart.notes}</label>
                   <textarea
                     rows={3}
                     value={contactInfo.notes}
@@ -294,7 +295,7 @@ export default function CartPage() {
                       setContactInfo({ ...contactInfo, notes: e.target.value })
                     }
                     className="form-input resize-none"
-                    placeholder="Yêu cầu đặc biệt, thời gian giao hàng..."
+                    placeholder={t.cart.notesPlaceholder}
                   />
                 </div>
               </div>
@@ -306,11 +307,11 @@ export default function CartPage() {
               >
                 {loading ? (
                   <>
-                    <Loader2 size={18} className="animate-spin" /> Đang gửi...
+                    <Loader2 size={18} className="animate-spin" /> {t.cart.submitting}
                   </>
                 ) : (
                   <>
-                    <Send size={18} /> Gửi yêu cầu báo giá
+                    <Send size={18} /> {t.cart.submit}
                   </>
                 )}
               </button>

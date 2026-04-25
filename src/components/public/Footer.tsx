@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   Leaf,
@@ -8,29 +10,32 @@ import {
   ArrowUp,
 } from "lucide-react";
 import { companyInfo } from "@/data/content";
-
-const footerLinks = {
-  products: [
-    { href: "/san-pham/cocopeat-growbag-agricox", label: "Cocopeat Growbag" },
-    { href: "/san-pham/dat-mun-dua-xu-ly", label: "Đất mụn dừa xử lý" },
-    { href: "/san-pham/cocopeat-block-5kg", label: "Cocopeat Block" },
-    { href: "/san-pham/cocopeat-loose-bulk", label: "Loose / Bulk" },
-  ],
-  company: [
-    { href: "/gioi-thieu", label: "Về GreenPeat" },
-    { href: "/cong-nghe", label: "Công nghệ" },
-    { href: "/du-an", label: "Dự án tiêu biểu" },
-    { href: "/lien-he", label: "Liên hệ" },
-  ],
-  services: [
-    { href: "/dat-hang", label: "Đặt hàng" },
-    { href: "/dat-hang", label: "Yêu cầu báo giá" },
-    { href: "/lien-he", label: "Tư vấn kỹ thuật" },
-    { href: "/lien-he", label: "Hỗ trợ xuất khẩu" },
-  ],
-};
+import { useT } from "@/context/LanguageContext";
 
 export default function Footer() {
+  const t = useT();
+
+  const footerLinks = {
+    products: [
+      { href: "/san-pham/cocopeat-growbag-agricox", label: "Cocopeat Growbag" },
+      { href: "/san-pham/dat-mun-dua-xu-ly", label: t.lang === "en" ? "Processed Cocopeat" : "Đất mụn dừa xử lý" },
+      { href: "/san-pham/cocopeat-block-5kg", label: "Cocopeat Block" },
+      { href: "/san-pham/cocopeat-loose-bulk", label: "Loose / Bulk" },
+    ],
+    company: [
+      { href: "/gioi-thieu", label: t.footer.aboutUs },
+      { href: "/cong-nghe", label: t.footer.tech },
+      { href: "/du-an", label: t.footer.featuredProjects },
+      { href: "/lien-he", label: t.nav.contact },
+    ],
+    services: [
+      { href: "/dat-hang", label: t.footer.placeOrder },
+      { href: "/dat-hang", label: t.footer.requestQuote },
+      { href: "/lien-he", label: t.footer.techConsulting },
+      { href: "/lien-he", label: t.footer.exportSupport },
+    ],
+  };
+
   return (
     <footer className="bg-green-900 text-white relative overflow-hidden">
       {/* Decorative elements */}
@@ -57,7 +62,7 @@ export default function Footer() {
               </div>
             </Link>
             <p className="text-green-300 text-sm leading-relaxed mb-5">
-              {companyInfo.slogan}
+              {t.footer.description}
             </p>
             <div className="space-y-3 text-sm">
               <a
@@ -82,7 +87,7 @@ export default function Footer() {
           {/* Products */}
           <div>
             <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-5">
-              Sản phẩm
+              {t.footer.products}
             </h3>
             <ul className="space-y-3">
               {footerLinks.products.map((link) => (
@@ -101,7 +106,7 @@ export default function Footer() {
           {/* Company */}
           <div>
             <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-5">
-              Công ty
+              {t.footer.company}
             </h3>
             <ul className="space-y-3">
               {footerLinks.company.map((link, i) => (
@@ -120,7 +125,7 @@ export default function Footer() {
           {/* Services */}
           <div>
             <h3 className="text-white font-bold text-sm uppercase tracking-wider mb-5">
-              Dịch vụ
+              {t.footer.services}
             </h3>
             <ul className="space-y-3">
               {footerLinks.services.map((link, i) => (
@@ -158,12 +163,12 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="border-t border-green-800 py-6 flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-green-400">
-          <p>© 2024 GreenPeat. Bảo lưu mọi quyền.</p>
+          <p>{t.footer.copyright}</p>
           <a
             href="#top"
             className="flex items-center gap-2 hover:text-white transition-colors"
           >
-            <ArrowUp size={16} /> Về đầu trang
+            <ArrowUp size={16} /> {t.lang === "en" ? "Back to top" : "Về đầu trang"}
           </a>
         </div>
       </div>

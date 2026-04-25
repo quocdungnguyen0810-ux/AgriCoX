@@ -18,8 +18,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { products } from "@/data/products";
+import { useT } from "@/context/LanguageContext";
 
 export default function OrderPage() {
+  const t = useT();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -84,14 +86,13 @@ export default function OrderPage() {
             <CheckCircle2 size={40} className="text-green-600" />
           </div>
           <h2 className="text-2xl font-extrabold text-gray-800 mb-2">
-            Yêu cầu đã được gửi!
+            {t.order.successTitle}
           </h2>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-green-50 text-green-700 font-mono font-bold text-lg mb-4">
             <FileText size={18} /> {rfqCode}
           </div>
           <p className="text-gray-500 mb-6">
-            Cảm ơn bạn đã quan tâm đến sản phẩm AgriCoX. Đội ngũ sales của 
-            chúng tôi sẽ liên hệ trong vòng 2 giờ làm việc.
+            {t.order.successDesc}
           </p>
           <div className="flex gap-3 justify-center">
             <button
@@ -105,10 +106,10 @@ export default function OrderPage() {
               }}
               className="btn-secondary"
             >
-              Gửi yêu cầu khác
+              {t.order.sendAnother}
             </button>
             <Link href="/san-pham" className="btn-primary">
-              Xem sản phẩm
+              {t.order.viewProducts}
             </Link>
           </div>
         </div>
@@ -125,17 +126,16 @@ export default function OrderPage() {
         </div>
         <div className="container-custom relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-green-200 text-sm mb-6">
-            <FileText size={16} /> Đặt hàng
+            <FileText size={16} /> {t.order.badge}
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
-            Đặt hàng &{" "}
+            {t.order.title1}{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-accent to-yellow-warm">
-              Yêu cầu báo giá
+              {t.order.title2}
             </span>
           </h1>
           <p className="text-green-200 text-lg max-w-2xl mx-auto">
-            Điền thông tin bên dưới để nhận báo giá tốt nhất. 
-            Đội ngũ sales sẽ phản hồi trong vòng 2 giờ làm việc.
+            {t.order.desc}
           </p>
         </div>
       </section>
@@ -155,7 +155,7 @@ export default function OrderPage() {
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <label className="form-label">
-                  <User size={14} className="inline mr-1.5" /> Họ và tên *
+                  <User size={14} className="inline mr-1.5" /> {t.order.fullName} *
                 </label>
                 <input
                   type="text" required placeholder="Nguyễn Văn A"
@@ -166,7 +166,7 @@ export default function OrderPage() {
               </div>
               <div>
                 <label className="form-label">
-                  <Building2 size={14} className="inline mr-1.5" /> Công ty
+                  <Building2 size={14} className="inline mr-1.5" /> {t.order.company}
                 </label>
                 <input
                   type="text" placeholder="Tên công ty / trang trại"
@@ -177,7 +177,7 @@ export default function OrderPage() {
               </div>
               <div>
                 <label className="form-label">
-                  <Phone size={14} className="inline mr-1.5" /> Số điện thoại *
+                  <Phone size={14} className="inline mr-1.5" /> {t.order.phone} *
                 </label>
                 <input
                   type="tel" required placeholder="0909 xxx xxx"
@@ -188,7 +188,7 @@ export default function OrderPage() {
               </div>
               <div>
                 <label className="form-label">
-                  <Mail size={14} className="inline mr-1.5" /> Email
+                  <Mail size={14} className="inline mr-1.5" /> {t.order.email}
                 </label>
                 <input
                   type="email" placeholder="email@company.com"
@@ -201,7 +201,7 @@ export default function OrderPage() {
 
             <div>
               <label className="form-label">
-                <Package size={14} className="inline mr-1.5" /> Sản phẩm quan tâm *
+                <Package size={14} className="inline mr-1.5" /> {t.order.product} *
               </label>
               <select
                 required
@@ -209,21 +209,21 @@ export default function OrderPage() {
                 onChange={(e) => setFormData({ ...formData, product: e.target.value })}
                 className="form-input"
               >
-                <option value="">-- Chọn sản phẩm --</option>
+                <option value="">{t.order.selectProduct}</option>
                 {products.map((p) => (
                   <option key={p.id} value={p.name}>{p.name}</option>
                 ))}
-                <option value="Khác">Sản phẩm khác / Tư vấn</option>
+                <option value="Khác">{t.order.otherProduct}</option>
               </select>
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
               <div>
                 <label className="form-label">
-                  <Hash size={14} className="inline mr-1.5" /> Số lượng dự kiến
+                  <Hash size={14} className="inline mr-1.5" /> {t.order.quantity}
                 </label>
                 <input
-                  type="text" placeholder="VD: 2,400 bao / 1 container"
+                  type="text" placeholder={t.order.quantityPlaceholder}
                   value={formData.quantity}
                   onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
                   className="form-input"
@@ -231,10 +231,10 @@ export default function OrderPage() {
               </div>
               <div>
                 <label className="form-label">
-                  <MapPin size={14} className="inline mr-1.5" /> Địa điểm giao hàng
+                  <MapPin size={14} className="inline mr-1.5" /> {t.order.location}
                 </label>
                 <input
-                  type="text" placeholder="Tỉnh / Thành phố / Quốc gia"
+                  type="text" placeholder={t.order.locationPlaceholder}
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="form-input"
@@ -244,11 +244,11 @@ export default function OrderPage() {
 
             <div>
               <label className="form-label">
-                <MessageSquare size={14} className="inline mr-1.5" /> Nội dung yêu cầu
+                <MessageSquare size={14} className="inline mr-1.5" /> {t.order.message}
               </label>
               <textarea
                 rows={4}
-                placeholder="Mô tả chi tiết yêu cầu, quy cách, thời gian giao hàng mong muốn..."
+                placeholder={t.order.messagePlaceholder}
                 value={formData.message}
                 onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                 className="form-input resize-none"
@@ -261,15 +261,14 @@ export default function OrderPage() {
               className="btn-primary w-full !py-4 !text-base disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? (
-                <><Loader2 size={18} className="animate-spin" /> Đang gửi...</>
+                <><Loader2 size={18} className="animate-spin" /> {t.order.submitting}</>
               ) : (
-                <><Send size={18} /> Gửi yêu cầu báo giá</>
+                <><Send size={18} /> {t.order.submit}</>
               )}
             </button>
 
             <p className="text-center text-sm text-gray-400">
-              Thông tin của bạn được bảo mật tuyệt đối. Chúng tôi sẽ liên hệ 
-              trong vòng 2 giờ làm việc.
+              {t.order.privacy}
             </p>
           </form>
         </div>

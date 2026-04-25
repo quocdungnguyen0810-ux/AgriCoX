@@ -9,23 +9,26 @@ import {
   Phone,
   Mail,
   Leaf,
+  Globe,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-
-const navLinks = [
-  { href: "/", label: "Trang chủ" },
-  { href: "/gioi-thieu", label: "Giới thiệu" },
-  { href: "/san-pham", label: "Sản phẩm" },
-  { href: "/cong-nghe", label: "Công nghệ" },
-  { href: "/du-an", label: "Dự án" },
-  { href: "/dat-hang", label: "Đặt hàng" },
-  { href: "/lien-he", label: "Liên hệ" },
-];
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { itemCount, setIsOpen } = useCart();
+  const { locale, t, setLocale } = useLanguage();
+
+  const navLinks = [
+    { href: "/", label: t.nav.home },
+    { href: "/gioi-thieu", label: t.nav.about },
+    { href: "/san-pham", label: t.nav.products },
+    { href: "/cong-nghe", label: t.nav.technology },
+    { href: "/du-an", label: t.nav.projects },
+    { href: "/dat-hang", label: t.nav.order },
+    { href: "/lien-he", label: t.nav.contact },
+  ];
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -46,9 +49,20 @@ export default function Header() {
               <Mail size={14} /> info@greenpeat.vn
             </a>
           </div>
-          <div className="flex items-center gap-1 text-green-200">
-            <Leaf size={14} />
-            <span>Nông nghiệp bền vững – Xuất khẩu toàn cầu</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1 text-green-200">
+              <Leaf size={14} />
+              <span>{t.brandSlogan}</span>
+            </div>
+            {/* Language switcher */}
+            <button
+              onClick={() => setLocale(locale === "vi" ? "en" : "vi")}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-xs font-medium"
+              aria-label="Switch language"
+            >
+              <Globe size={13} />
+              {locale === "vi" ? "EN" : "VI"}
+            </button>
           </div>
         </div>
       </div>
@@ -92,11 +106,20 @@ export default function Header() {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
+            {/* Language switcher (mobile) */}
+            <button
+              onClick={() => setLocale(locale === "vi" ? "en" : "vi")}
+              className="lg:hidden p-2 rounded-xl hover:bg-green-50 transition-colors text-xs font-bold text-green-700"
+              aria-label="Switch language"
+            >
+              <Globe size={20} />
+            </button>
+
             {/* Cart */}
             <button
               onClick={() => setIsOpen(true)}
               className="relative p-2.5 rounded-xl hover:bg-green-50 transition-colors"
-              aria-label="Giỏ hàng báo giá"
+              aria-label={t.nav.cart}
             >
               <ShoppingCart size={22} className="text-green-700" />
               {itemCount > 0 && (
@@ -108,7 +131,7 @@ export default function Header() {
 
             {/* CTA */}
             <Link href="/dat-hang" className="hidden md:inline-flex btn-primary text-sm !py-2.5 !px-5">
-              Nhận báo giá
+              {t.nav.getQuote}
             </Link>
 
             {/* Mobile toggle */}
@@ -142,7 +165,7 @@ export default function Header() {
                   onClick={() => setMobileOpen(false)}
                   className="btn-primary w-full text-center"
                 >
-                  Nhận báo giá
+                  {t.nav.getQuote}
                 </Link>
               </div>
             </nav>

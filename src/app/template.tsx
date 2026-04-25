@@ -4,6 +4,7 @@ import Header from "@/components/public/Header";
 import Footer from "@/components/public/Footer";
 import CartDrawer from "@/components/public/CartDrawer";
 import { CartProvider } from "@/context/CartContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { usePathname } from "next/navigation";
 
 export default function RootTemplate({
@@ -19,11 +20,13 @@ export default function RootTemplate({
   }
 
   return (
-    <CartProvider>
-      <Header />
-      <main>{children}</main>
-      <Footer />
-      <CartDrawer />
-    </CartProvider>
+    <LanguageProvider>
+      <CartProvider>
+        <Header />
+        <main>{children}</main>
+        <Footer />
+        <CartDrawer />
+      </CartProvider>
+    </LanguageProvider>
   );
 }
