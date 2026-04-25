@@ -1,0 +1,218 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===== AUTHENTICATION =====
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  phone         String?
+  passwordHash  String
+  role          String    @default("SALES") // ADMIN, SALES, ACCOUNTANT, WAREHOUSE, MANAGER
+  isActive      Boolean   @default(true)
+  avatar        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  assignedOrders    Order[]        @relation("AssignedTo")
+  assignedQuotes    QuoteRequest[] @relation("QuoteAssignedTo")
+  contactLogs       ContactLog[]
+  orderStatusLogs   OrderStatusLog[]
+  documents         Document[]
+
+  @@map("users")
+}
+
+// ===== CUSTOMERS =====
+
+model Customer {
+  id           String   @id @default(cuid())
+  companyName  String?
+  contactName  String
+  email        String?
+  phone        String
+  address      String?
+  city         String?
+  country      String   @default("Việt Nam")
+  zalo         String?
+  whatsapp     String?
+  type         String   @default("DOMESTIC") // DOMESTIC, EXPORT
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  orders        Order[]
+  quoteRequests QuoteRequest[]
+  contactLogs   ContactLog[]
+
+  @@map("customers")
+}
+
+// ===== PRODUCTS =====
+
+model ProductRecord {
+  id            String   @id @default(cuid())
+  name          String
+  slug          String   @unique
+  category      String
+  description   String
+  applications  String   // JSON array stored as text
+  specifications String  // JSON object stored as text
+  packaging     String
+  moq           String
+  referencePrice String?
+  priceUnit     String?
+  showPrice     Boolean  @default(false)
+  imageUrl      String?
+  catalogueUrl  String?
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+// ===== QUOTE REQUESTS =====
+
+model QuoteRequest {
+  id          String   @id @default(cuid())
+  rfqCode     String   @unique
+  customerId  String?
+  assignedTo  String?
+  status      String   @default("NEW") // NEW, ASSIGNED, IN_PROGRESS, QUOTED, ACCEPTED, REJECTED, CONVERTED
+  
+  // Contact info (for anonymous submissions)
+  contactName    String
+  companyName    String?
+  contactPhone   String
+  contactEmail   String?
+  deliveryLocation String?
+  
+  items       String   // JSON array of {productName, quantity, specification}
+  message     String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  assignee    User?     @relation("QuoteAssignedTo", fields: [assignedTo], references: [id])
+
+  @@map("quote_requests")
+}
+
+// ===== ORDERS =====
+
+model Order {
+  id              String   @id @default(cuid())
+  orderCode       String   @unique
+  customerId      String
+  assignedTo      String?
+  status          String   @default("REQUEST_RECEIVED")
+  
+  subtotal        Float    @default(0)
+  shippingCost    Float    @default(0)
+  taxAmount       Float    @default(0)
+  totalAmount     Float    @default(0)
+  
+  paymentTerms    String?
+  deliveryTerms   String?
+  deliveryAddress String?
+  
+  orderDate       DateTime @default(now())
+  expectedDelivery DateTime?
+  
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relations
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  assignee        User?           @relation("AssignedTo", fields: [assignedTo], references: [id])
+  items           OrderItem[]
+  documents       Document[]
+  statusLogs      OrderStatusLog[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  productId     String?
+  productName   String
+  quantity      Int
+  specification String?
+  unitPrice     Float    @default(0)
+  totalPrice    Float    @default(0)
+
+  // Relations
+  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product ProductRecord? @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model OrderStatusLog {
+  id         String   @id @default(cuid())
+  orderId    String
+  changedBy  String?
+  fromStatus String
+  toStatus   String
+  note       String?
+  changedAt  DateTime @default(now())
+
+  // Relations
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User? @relation(fields: [changedBy], references: [id])
+
+  @@map("order_status_logs")
+}
+
+// ===== DOCUMENTS =====
+
+model Document {
+  id          String   @id @default(cuid())
+  orderId     String?
+  type        String   // QUOTE, PO, CONTRACT, DELIVERY_NOTE, INVOICE, RECEIPT, ACCEPTANCE
+  docNumber   String?
+  fileUrl     String?
+  metadata    String?  // JSON
+  createdBy   String?
+  createdAt   DateTime @default(now())
+
+  // Relations
+  order Order? @relation(fields: [orderId], references: [id])
+  user  User?  @relation(fields: [createdBy], references: [id])
+
+  @@map("documents")
+}
+
+// ===== CRM =====
+
+model ContactLog {
+  id          String   @id @default(cuid())
+  customerId  String
+  userId      String?
+  channel     String   // EMAIL, PHONE, ZALO, WHATSAPP, MEETING, OTHER
+  content     String
+  contactedAt DateTime @default(now())
+
+  // Relations
+  customer Customer @relation(fields: [customerId], references: [id])
+  user     User?    @relation(fields: [userId], references: [id])
+
+  @@map("contact_logs")
+}
