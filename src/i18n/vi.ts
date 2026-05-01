@@ -121,6 +121,7 @@ export const vi = {
     successDesc: "Vui lòng lưu mã RFQ trên để theo dõi. Đội ngũ sales sẽ liên hệ trong vòng 2 giờ làm việc.",
     continueShopping: "Tiếp tục mua sắm",
     goHome: "Về trang chủ",
+    errorGeneric: "Có lỗi xảy ra. Vui lòng thử lại.",
   },
 
   // Order form
@@ -149,6 +150,7 @@ export const vi = {
     successDesc: "Cảm ơn bạn đã quan tâm đến sản phẩm AgriCoX. Đội ngũ sales của chúng tôi sẽ liên hệ trong vòng 2 giờ làm việc.",
     sendAnother: "Gửi yêu cầu khác",
     viewProducts: "Xem sản phẩm",
+    errorGeneric: "Có lỗi xảy ra. Vui lòng thử lại.",
   },
 
   // About page
@@ -205,6 +207,16 @@ export const vi = {
     title1: "Dự án",
     title2: "thành công",
     desc: "Những dự án nông nghiệp công nghệ cao sử dụng giá thể mụn dừa AgriCoX trên khắp Việt Nam và thế giới.",
+  },
+  // Cart Drawer
+  cartDrawer: {
+    title: "Giỏ hàng báo giá",
+    emptyTitle: "Chưa có sản phẩm nào",
+    emptyDesc: "Hãy chọn sản phẩm từ danh mục",
+    totalProducts: "Tổng sản phẩm:",
+    itemsUnit: "loại",
+    submitRfq: "Gửi yêu cầu báo giá",
+    clearAll: "Xóa tất cả",
   },
 };
 

@@ -8,6 +8,7 @@ import {
   Package,
   Users,
   FileText,
+  FileCheck,
   ShoppingCart,
   Leaf,
   LogOut,
@@ -25,6 +26,7 @@ const sidebarItems = [
   { href: "/admin/customers", label: "Khách hàng", icon: Users },
   { href: "/admin/quotes", label: "Báo giá", icon: FileText },
   { href: "/admin/orders", label: "Đơn hàng", icon: ShoppingCart },
+  { href: "/admin/contracts", label: "Hợp đồng", icon: FileCheck },
 ];
 
 function AdminSidebar({ collapsed, setCollapsed }: { collapsed: boolean; setCollapsed: (v: boolean) => void }) {

@@ -6,7 +6,8 @@ import {
   ArrowRight,
   Quote,
 } from "lucide-react";
-import { projects } from "@/data/content";
+import { getProjects } from "@/lib/queries";
+import { getServerT } from "@/lib/i18n-server";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -14,7 +15,10 @@ export const metadata: Metadata = {
   description: "Case study các dự án nông nghiệp sử dụng sản phẩm AgriCoX. Kết quả đạt được, phản hồi khách hàng.",
 };
 
-export default function ProjectsPage() {
+export default async function ProjectsPage() {
+  const { locale, t } = await getServerT();
+  const projects = await getProjects(locale);
+
   return (
     <div>
       {/* Hero */}
@@ -24,17 +28,16 @@ export default function ProjectsPage() {
         </div>
         <div className="container-custom relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-green-200 text-sm mb-6">
-            <Award size={16} /> Dự án
+            <Award size={16} /> {t.projects.badge}
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
-            Dự án{" "}
+            {t.projects.title1}{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-brown-300">
-              tiêu biểu
+              {t.projects.title2}
             </span>
           </h1>
           <p className="text-green-200 text-lg max-w-2xl mx-auto">
-            Những câu chuyện thành công từ khách hàng và đối tác của GreenPeat 
-            trên khắp Việt Nam và quốc tế.
+            {t.projects.desc}
           </p>
         </div>
       </section>
@@ -71,13 +74,13 @@ export default function ProjectsPage() {
 
                   <div className="grid grid-cols-2 gap-3 mb-5">
                     <div className="p-3 rounded-xl bg-green-50">
-                      <div className="text-xs text-gray-400">Loại cây</div>
+                      <div className="text-xs text-gray-400">{locale === "en" ? "Crop" : "Loại cây"}</div>
                       <div className="text-sm font-semibold text-gray-800">
                         {project.cropType}
                       </div>
                     </div>
                     <div className="p-3 rounded-xl bg-brown-50">
-                      <div className="text-xs text-gray-400">Quy mô</div>
+                      <div className="text-xs text-gray-400">{locale === "en" ? "Scale" : "Quy mô"}</div>
                       <div className="text-sm font-semibold text-gray-800">
                         {project.scale}
                       </div>
@@ -86,7 +89,7 @@ export default function ProjectsPage() {
 
                   <div className="mb-4">
                     <div className="text-xs text-gray-400 mb-1">
-                      Sản phẩm sử dụng
+                      {locale === "en" ? "Products used" : "Sản phẩm sử dụng"}
                     </div>
                     <div className="text-sm font-medium text-green-700">
                       {project.productsUsed}
@@ -94,7 +97,7 @@ export default function ProjectsPage() {
                   </div>
 
                   <div className="mb-5">
-                    <div className="text-xs text-gray-400 mb-1">Kết quả</div>
+                    <div className="text-xs text-gray-400 mb-1">{locale === "en" ? "Results" : "Kết quả"}</div>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       {project.results}
                     </p>
@@ -118,19 +121,21 @@ export default function ProjectsPage() {
       <section className="section bg-gray-soft">
         <div className="container-custom text-center">
           <h2 className="section-title">
-            Bạn muốn trở thành câu chuyện{" "}
-            <span className="gradient-text">thành công</span> tiếp theo?
+            {locale === "en"
+              ? <>Want to be the next <span className="gradient-text">success story</span>?</>
+              : <>Bạn muốn trở thành câu chuyện{" "}<span className="gradient-text">thành công</span> tiếp theo?</>}
           </h2>
           <p className="section-subtitle">
-            Liên hệ với chúng tôi để được tư vấn giải pháp giá thể 
-            phù hợp nhất cho dự án của bạn.
+            {locale === "en"
+              ? "Contact us for expert substrate solutions tailored to your project."
+              : "Liên hệ với chúng tôi để được tư vấn giải pháp giá thể phù hợp nhất cho dự án của bạn."}
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Link href="/dat-hang" className="btn-primary">
-              Nhận tư vấn miễn phí <ArrowRight size={18} />
+              {locale === "en" ? "Get Free Consultation" : "Nhận tư vấn miễn phí"} <ArrowRight size={18} />
             </Link>
             <Link href="/san-pham" className="btn-secondary">
-              Xem sản phẩm
+              {t.nav.products}
             </Link>
           </div>
         </div>

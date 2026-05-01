@@ -15,11 +15,11 @@ import Link from "next/link";
 async function getDashboardData() {
   const [productCount, customerCount, quoteCount, orderCount, recentQuotes] =
     await Promise.all([
-      prisma.productRecord.count({ where: { isActive: true } }),
+      prisma.product.count({ where: { status: "ACTIVE" } }),
       prisma.customer.count(),
-      prisma.quoteRequest.count(),
+      prisma.rfq.count(),
       prisma.order.count(),
-      prisma.quoteRequest.findMany({
+      prisma.rfq.findMany({
         orderBy: { createdAt: "desc" },
         take: 5,
       }),

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { updateQuoteStatus, assignQuoteToSales, convertQuoteToOrder, deleteQuote } from "@/app/admin/actions";
-import { ArrowRightCircle, UserCheck, Trash2, Loader2, ShoppingCart } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { updateRfqStatus, assignRfqToSales, convertRfqToOrder, deleteRfq, createQuoteFromRfq } from "@/app/admin/actions";
+import { ArrowRightCircle, UserCheck, Trash2, Loader2, ShoppingCart, FileSpreadsheet, AlertCircle } from "lucide-react";
 
 interface QuoteActionsProps {
   quoteId: string;
@@ -35,23 +36,25 @@ export function QuoteActions({ quoteId, currentStatus, assigneeId, assigneeName,
   const [isPending, startTransition] = useTransition();
   const [showAssign, setShowAssign] = useState(false);
   const [convertResult, setConvertResult] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleStatusChange = (newStatus: string) => {
     if (newStatus === "CONVERT") {
       startTransition(async () => {
-        const result = await convertQuoteToOrder(quoteId, {});
+        const result = await convertRfqToOrder(quoteId, {});
         setConvertResult(result.orderCode);
       });
       return;
     }
     startTransition(() => {
-      updateQuoteStatus(quoteId, newStatus);
+      updateRfqStatus(quoteId, newStatus);
     });
   };
 
   const handleAssign = (userId: string) => {
     startTransition(() => {
-      assignQuoteToSales(quoteId, userId);
+      assignRfqToSales(quoteId, userId);
     });
     setShowAssign(false);
   };
@@ -59,7 +62,7 @@ export function QuoteActions({ quoteId, currentStatus, assigneeId, assigneeName,
   const handleDelete = () => {
     if (confirm("Xác nhận xóa yêu cầu báo giá này?")) {
       startTransition(() => {
-        deleteQuote(quoteId);
+        deleteRfq(quoteId);
       });
     }
   };
@@ -124,6 +127,36 @@ export function QuoteActions({ quoteId, currentStatus, assigneeId, assigneeName,
         {assigneeName && (
           <span className="text-xs text-gray-400">
             Phụ trách: <span className="font-medium text-gray-600">{assigneeName}</span>
+          </span>
+        )}
+
+        {/* Create Quote button */}
+        {["NEW", "ASSIGNED", "IN_PROGRESS"].includes(currentStatus) && (
+          <button
+            onClick={() => {
+              setCreateError(null);
+              startTransition(async () => {
+                // TODO: pass session userId as createdBy once session integration is done
+                const result = await createQuoteFromRfq(quoteId, "");
+                if (result.success) {
+                  router.push(`/admin/quotes/${result.data.quoteId}`);
+                } else {
+                  setCreateError(result.error.message);
+                }
+              });
+            }}
+            disabled={isPending}
+            className="text-xs px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white flex items-center gap-1.5 font-medium disabled:opacity-50"
+          >
+            {isPending ? <Loader2 size={14} className="animate-spin" /> : <FileSpreadsheet size={14} />}
+            Tạo báo giá
+          </button>
+        )}
+
+        {/* Inline error from createQuoteFromRfq */}
+        {createError && (
+          <span className="flex items-center gap-1 text-xs text-red-600 bg-red-50 px-2 py-1 rounded-lg">
+            <AlertCircle size={12} /> {createError}
           </span>
         )}
 

@@ -6,213 +6,505 @@ datasource db {
   provider = "postgresql"
 }
 
-// ===== AUTHENTICATION =====
-
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  name          String
-  phone         String?
-  passwordHash  String
-  role          String    @default("SALES") // ADMIN, SALES, ACCOUNTANT, WAREHOUSE, MANAGER
-  isActive      Boolean   @default(true)
-  avatar        String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  // Relations
-  assignedOrders    Order[]        @relation("AssignedTo")
-  assignedQuotes    QuoteRequest[] @relation("QuoteAssignedTo")
-  contactLogs       ContactLog[]
-  orderStatusLogs   OrderStatusLog[]
-  documents         Document[]
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  name               String
+  phone              String?
+  passwordHash       String
+  role               String              @default("SALES")
+  isActive           Boolean             @default(true)
+  avatar             String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  contractStatusLogs ContractStatusLog[]
+  createdContracts   Contract[]          @relation("ContractCreatedBy")
+  customerNotes      CustomerNote[]
+  assignedCustomers  Customer[]          @relation("CustomerAssignedTo")
+  documents          Document[]
+  orderStatusLogs    OrderStatusLog[]
+  assignedOrders     Order[]             @relation("AssignedTo")
+  createdQuotes      Quote[]             @relation("QuoteCreatedBy")
+  assignedRfqs       Rfq[]               @relation("RfqAssignedTo")
 
   @@map("users")
 }
 
-// ===== CUSTOMERS =====
-
-model Customer {
-  id           String   @id @default(cuid())
-  companyName  String?
-  contactName  String
-  email        String?
-  phone        String
-  address      String?
-  city         String?
-  country      String   @default("Việt Nam")
-  zalo         String?
-  whatsapp     String?
-  type         String   @default("DOMESTIC") // DOMESTIC, EXPORT
-  notes        String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  // Relations
-  orders        Order[]
-  quoteRequests QuoteRequest[]
-  contactLogs   ContactLog[]
-
-  @@map("customers")
-}
-
-// ===== PRODUCTS =====
-
-model ProductRecord {
-  id            String   @id @default(cuid())
-  name          String
-  slug          String   @unique
-  category      String
-  description   String
-  applications  String   // JSON array stored as text
-  specifications String  // JSON object stored as text
-  packaging     String
-  moq           String
-  referencePrice String?
-  priceUnit     String?
-  showPrice     Boolean  @default(false)
-  imageUrl      String?
-  catalogueUrl  String?
-  isActive      Boolean  @default(true)
-  sortOrder     Int      @default(0)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  // Relations
-  orderItems OrderItem[]
+model Product {
+  id           String               @id @default(cuid())
+  sku          String               @unique
+  slug         String               @unique
+  categoryId   String?
+  imageUrl     String?
+  gallery      String?
+  unit         String               @default("bag")
+  moq          String?
+  status       String               @default("ACTIVE")
+  showPrice    Boolean              @default(false)
+  sortOrder    Int                  @default(0)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  orderItems   OrderItem[]
+  translations ProductTranslation[]
+  category     Category?            @relation(fields: [categoryId], references: [id])
+  quoteItems   QuoteItem[]
+  rfqItems     RfqItem[]
 
   @@map("products")
 }
 
-// ===== QUOTE REQUESTS =====
+model ProductTranslation {
+  id               String  @id @default(cuid())
+  productId        String
+  locale           String
+  name             String
+  shortDescription String?
+  fullDescription  String?
+  specifications   String?
+  packaging        String?
+  applications     String?
+  referencePrice   String?
+  seoTitle         String?
+  seoDescription   String?
+  product          Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-model QuoteRequest {
-  id          String   @id @default(cuid())
-  rfqCode     String   @unique
-  customerId  String?
-  assignedTo  String?
-  status      String   @default("NEW") // NEW, ASSIGNED, IN_PROGRESS, QUOTED, ACCEPTED, REJECTED, CONVERTED
-  
-  // Contact info (for anonymous submissions)
-  contactName    String
-  companyName    String?
-  contactPhone   String
-  contactEmail   String?
-  deliveryLocation String?
-  
-  items       String   // JSON array of {productName, quantity, specification}
-  message     String?
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  customer    Customer? @relation(fields: [customerId], references: [id])
-  assignee    User?     @relation("QuoteAssignedTo", fields: [assignedTo], references: [id])
-
-  @@map("quote_requests")
+  @@unique([productId, locale])
+  @@map("product_translations")
 }
 
-// ===== ORDERS =====
+model Category {
+  id           String                @id @default(cuid())
+  slug         String                @unique
+  sortOrder    Int                   @default(0)
+  status       String                @default("ACTIVE")
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  translations CategoryTranslation[]
+  products     Product[]
 
-model Order {
-  id              String   @id @default(cuid())
-  orderCode       String   @unique
-  customerId      String
+  @@map("categories")
+}
+
+model CategoryTranslation {
+  id             String   @id @default(cuid())
+  categoryId     String
+  locale         String
+  name           String
+  description    String?
+  seoTitle       String?
+  seoDescription String?
+  category       Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, locale])
+  @@map("category_translations")
+}
+
+model Page {
+  id           String            @id @default(cuid())
+  slug         String            @unique
+  template     String            @default("default")
+  status       String            @default("ACTIVE")
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  translations PageTranslation[]
+
+  @@map("pages")
+}
+
+model PageTranslation {
+  id             String  @id @default(cuid())
+  pageId         String
+  locale         String
+  title          String?
+  subtitle       String?
+  contentJson    String?
+  seoTitle       String?
+  seoDescription String?
+  page           Page    @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@unique([pageId, locale])
+  @@map("page_translations")
+}
+
+model Project {
+  id           String               @id @default(cuid())
+  slug         String               @unique
+  imageUrl     String?
+  location     String?
+  cropType     String?
+  scale        String?
+  productId    String?
+  sortOrder    Int                  @default(0)
+  status       String               @default("ACTIVE")
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  translations ProjectTranslation[]
+
+  @@map("projects")
+}
+
+model ProjectTranslation {
+  id             String  @id @default(cuid())
+  projectId      String
+  locale         String
+  title          String
+  summary        String?
+  productsUsed   String?
+  results        String?
+  feedback       String?
+  seoTitle       String?
+  seoDescription String?
+  project        Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, locale])
+  @@map("project_translations")
+}
+
+model Customer {
+  id               String         @id @default(cuid())
+  customerCode     String?        @unique
+  name             String
+  companyName      String?
+  email            String?
+  phone            String
+  address          String?
+  province         String?
+  country          String         @default("Việt Nam")
+  zalo             String?
+  whatsapp         String?
+  preferredLocale  String         @default("vi")
+  preferredContact String?
+  customerType     String         @default("DOMESTIC")
+  source           String?
+  status           String         @default("ACTIVE")
+  assignedTo       String?
+  notes            String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  contracts        Contract[]
+  customerNotes    CustomerNote[]
+  assignee         User?          @relation("CustomerAssignedTo", fields: [assignedTo], references: [id])
+  orders           Order[]
+  quotes           Quote[]
+  rfqs             Rfq[]
+
+  @@map("customers")
+}
+
+model CustomerNote {
+  id          String   @id @default(cuid())
+  customerId  String
+  userId      String?
+  note        String
+  channel     String?
+  relatedType String?
+  relatedId   String?
+  createdAt   DateTime @default(now())
+  customer    Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@map("customer_notes")
+}
+
+model Rfq {
+  id              String     @id @default(cuid())
+  rfqCode         String     @unique
+  customerId      String?
   assignedTo      String?
-  status          String   @default("REQUEST_RECEIVED")
-  
-  subtotal        Float    @default(0)
-  shippingCost    Float    @default(0)
-  taxAmount       Float    @default(0)
-  totalAmount     Float    @default(0)
-  
+  status          String     @default("NEW")
+  contactName     String
+  companyName     String?
+  contactPhone    String
+  contactEmail    String?
+  deliveryAddress String?
+  province        String?
+  country         String?
+  preferredLocale String     @default("vi")
+  message         String?
+  technicalNotes  String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  contracts       Contract[]
+  quotes          Quote[]
+  items           RfqItem[]
+  assignee        User?      @relation("RfqAssignedTo", fields: [assignedTo], references: [id])
+  customer        Customer?  @relation(fields: [customerId], references: [id])
+
+  @@map("rfqs")
+}
+
+model RfqItem {
+  id                  String   @id @default(cuid())
+  rfqId               String
+  productId           String?
+  productSku          String?
+  productNameSnapshot String
+  packagingSnapshot   String?
+  quantity            Int      @default(1)
+  unit                String?
+  itemNote            String?
+  createdAt           DateTime @default(now())
+  product             Product? @relation(fields: [productId], references: [id])
+  rfq                 Rfq      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+
+  @@map("rfq_items")
+}
+
+model Quote {
+  id              String      @id @default(cuid())
+  quoteCode       String      @unique
+  rfqId           String?
+  customerId      String?
+  createdBy       String?
+  locale          String      @default("vi")
+  currency        String      @default("VND")
+  subtotal        Float       @default(0)
+  discountAmount  Float       @default(0)
+  vatRate         Float       @default(0.08)
+  vatAmount       Float       @default(0)
+  shippingFee     Float       @default(0)
+  totalAmount     Float       @default(0)
   paymentTerms    String?
   deliveryTerms   String?
-  deliveryAddress String?
-  
-  orderDate       DateTime @default(now())
-  expectedDelivery DateTime?
-  
-  notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  validUntil      DateTime?
+  commercialNotes String?
+  technicalNotes  String?
+  status          String      @default("DRAFT")
+  version         Int         @default(1)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  contracts       Contract[]
+  orders          Order?
+  items           QuoteItem[]
+  creator         User?       @relation("QuoteCreatedBy", fields: [createdBy], references: [id])
+  customer        Customer?   @relation(fields: [customerId], references: [id])
+  rfq             Rfq?        @relation(fields: [rfqId], references: [id])
 
-  // Relations
-  customer        Customer        @relation(fields: [customerId], references: [id])
-  assignee        User?           @relation("AssignedTo", fields: [assignedTo], references: [id])
-  items           OrderItem[]
-  documents       Document[]
-  statusLogs      OrderStatusLog[]
+  @@map("quotes")
+}
+
+model QuoteItem {
+  id                  String   @id @default(cuid())
+  quoteId             String
+  productId           String?
+  productSku          String?
+  productNameSnapshot String
+  packagingSnapshot   String?
+  quantity            Int      @default(1)
+  unit                String?
+  unitPrice           Float    @default(0)
+  discountRate        Float    @default(0)
+  totalPrice          Float    @default(0)
+  note                String?
+  product             Product? @relation(fields: [productId], references: [id])
+  quote               Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("quote_items")
+}
+
+model Order {
+  id                   String           @id @default(cuid())
+  orderCode            String           @unique
+  rfqId                String?
+  quoteId              String?          @unique
+  customerId           String
+  assignedTo           String?
+  locale               String           @default("vi")
+  currency             String           @default("VND")
+  status               String           @default("NEW")
+  subtotal             Float            @default(0)
+  discountAmount       Float            @default(0)
+  vatAmount            Float            @default(0)
+  shippingFee          Float            @default(0)
+  totalAmount          Float            @default(0)
+  paymentStatus        String           @default("PENDING")
+  fulfillmentStatus    String           @default("NOT_STARTED")
+  paymentTerms         String?
+  deliveryTerms        String?
+  deliveryAddress      String?
+  orderDate            DateTime         @default(now())
+  expectedDeliveryDate DateTime?
+  notes                String?
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  contract             Contract?
+  documents            Document[]
+  items                OrderItem[]
+  statusLogs           OrderStatusLog[]
+  assignee             User?            @relation("AssignedTo", fields: [assignedTo], references: [id])
+  customer             Customer         @relation(fields: [customerId], references: [id])
+  quote                Quote?           @relation(fields: [quoteId], references: [id])
 
   @@map("orders")
 }
 
 model OrderItem {
-  id            String   @id @default(cuid())
-  orderId       String
-  productId     String?
-  productName   String
-  quantity      Int
-  specification String?
-  unitPrice     Float    @default(0)
-  totalPrice    Float    @default(0)
-
-  // Relations
-  order   Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product ProductRecord? @relation(fields: [productId], references: [id])
+  id                  String   @id @default(cuid())
+  orderId             String
+  productId           String?
+  productSku          String?
+  productNameSnapshot String
+  packagingSnapshot   String?
+  quantity            Int      @default(1)
+  unit                String?
+  unitPrice           Float    @default(0)
+  totalPrice          Float    @default(0)
+  note                String?
+  order               Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product             Product? @relation(fields: [productId], references: [id])
 
   @@map("order_items")
 }
 
 model OrderStatusLog {
-  id         String   @id @default(cuid())
-  orderId    String
-  changedBy  String?
-  fromStatus String
-  toStatus   String
-  note       String?
-  changedAt  DateTime @default(now())
-
-  // Relations
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  user  User? @relation(fields: [changedBy], references: [id])
+  id        String   @id @default(cuid())
+  orderId   String
+  changedBy String?
+  oldStatus String?
+  newStatus String
+  note      String?
+  changedAt DateTime @default(now())
+  user      User?    @relation(fields: [changedBy], references: [id])
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@map("order_status_logs")
 }
 
-// ===== DOCUMENTS =====
-
 model Document {
-  id          String   @id @default(cuid())
-  orderId     String?
-  type        String   // QUOTE, PO, CONTRACT, DELIVERY_NOTE, INVOICE, RECEIPT, ACCEPTANCE
-  docNumber   String?
-  fileUrl     String?
-  metadata    String?  // JSON
-  createdBy   String?
-  createdAt   DateTime @default(now())
-
-  // Relations
-  order Order? @relation(fields: [orderId], references: [id])
-  user  User?  @relation(fields: [createdBy], references: [id])
+  id        String   @id @default(cuid())
+  orderId   String?
+  type      String
+  docNumber String?
+  fileUrl   String?
+  metadata  String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [createdBy], references: [id])
+  order     Order?   @relation(fields: [orderId], references: [id])
 
   @@map("documents")
 }
 
-// ===== CRM =====
+model Contract {
+  id                   String              @id @default(cuid())
+  contractCode         String              @unique
+  rfqId                String?
+  quoteId              String?
+  orderId              String?             @unique
+  customerId           String
+  locale               String              @default("vi")
+  currency             String              @default("VND")
+  totalAmount          Float               @default(0)
+  contractDate         DateTime?
+  effectiveDate        DateTime?
+  expiryDate           DateTime?
+  paymentTerms         String?
+  deliveryTerms        String?
+  incoterm             String?
+  deliveryLocation     String?
+  contentVi            String?
+  contentEn            String?
+  status               String              @default("DRAFT")
+  draftFileUrl         String?
+  signedFileUrl        String?
+  googleDriveFolderId  String?
+  googleDriveFolderUrl String?
+  createdBy            String?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  documents            ContractDocument[]
+  signatures           ContractSignature[]
+  statusLogs           ContractStatusLog[]
+  creator              User?               @relation("ContractCreatedBy", fields: [createdBy], references: [id])
+  customer             Customer            @relation(fields: [customerId], references: [id])
+  order                Order?              @relation(fields: [orderId], references: [id])
+  quote                Quote?              @relation(fields: [quoteId], references: [id])
+  rfq                  Rfq?                @relation(fields: [rfqId], references: [id])
 
-model ContactLog {
-  id          String   @id @default(cuid())
-  customerId  String
-  userId      String?
-  channel     String   // EMAIL, PHONE, ZALO, WHATSAPP, MEETING, OTHER
-  content     String
-  contactedAt DateTime @default(now())
+  @@map("contracts")
+}
 
-  // Relations
-  customer Customer @relation(fields: [customerId], references: [id])
-  user     User?    @relation(fields: [userId], references: [id])
+model ContractSignature {
+  id                String    @id @default(cuid())
+  contractId        String
+  signerName        String
+  signerEmail       String?
+  signerRole        String    // CUSTOMER | GREENPEAT_SIGNER
+  signerCompany     String?
+  signatureMethod   String?   // DRAW | UPLOAD | TYPE_NAME
+  signatureImageUrl String?
+  typedSignature    String?   // Stored when method = TYPE_NAME
+  signingTokenHash  String?   @unique // SHA-256 hash of raw token; never store raw token
+  tokenExpiresAt    DateTime?
+  tokenUsedAt       DateTime? // Set when token is consumed (single-use)
+  tokenRevokedAt    DateTime? // Set when token is explicitly revoked
+  signedAt          DateTime?
+  signedConsentText String?   // Exact consent text the signer agreed to
+  ipAddress         String?
+  userAgent         String?
+  rejectReason      String?   // Filled when signer rejects / requests revision
+  signingVersion    Int       @default(1) // Ties signature to specific contract content version
+  status            String    @default("PENDING") // PENDING | SIGNED | REJECTED | EXPIRED
+  createdAt         DateTime  @default(now())
+  contract          Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
-  @@map("contact_logs")
+  @@map("contract_signatures")
+}
+
+model ContractDocument {
+  id                String   @id @default(cuid())
+  contractId        String
+  documentType      String
+  fileName          String
+  fileUrl           String?
+  googleDriveFileId String?
+  version           Int      @default(1)
+  uploadedBy        String?
+  createdAt         DateTime @default(now())
+  contract          Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("contract_documents")
+}
+
+model ContractStatusLog {
+  id         String   @id @default(cuid())
+  contractId String
+  changedBy  String?
+  oldStatus  String?
+  newStatus  String
+  note       String?
+  changedAt  DateTime @default(now())
+  user       User?    @relation(fields: [changedBy], references: [id])
+  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("contract_status_logs")
+}
+
+/// Unified document generation tracking across all entity types.
+/// Stores metadata for every generated PDF, DOCX, and XLSX file.
+/// Google Drive fields are nullable — populated in Phase 6B.
+/// Database is source of truth; file storage is secondary.
+model GeneratedDocument {
+  id                  String   @id @default(cuid())
+  entityType          String   // QUOTE | ORDER | CONTRACT | RFQ | PAYMENT | DELIVERY
+  entityId            String   // FK to the source record (not enforced — polymorphic)
+  documentType        String   // QUOTE | ORDER_CONFIRMATION | CONTRACT_DRAFT | etc.
+  documentCode        String?  // e.g., "GP-QT-2026-0001_v1.pdf"
+  format              String   // PDF | DOCX | XLSX
+  fileName            String   // Human-readable filename for download
+  mimeType            String   // application/pdf | application/vnd.openxmlformats-officedocument.* | etc.
+  fileUrl             String?  // Download route or external URL (nullable until generated)
+  fileSize            Int?     // File size in bytes
+  storageProvider     String   @default("LOCAL") // LOCAL | GOOGLE_DRIVE (Phase 6B)
+  googleDriveFileId   String?  // Phase 6B: Google Drive file ID
+  googleDriveFolderId String?  // Phase 6B: Google Drive folder ID
+  version             Int      @default(1)
+  status              String   @default("GENERATED") // GENERATED | ARCHIVED | DELETED
+  generatedBy         String?  // User ID who triggered generation
+  generatedAt         DateTime @default(now())
+  createdAt           DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([documentType, format])
+  @@map("generated_documents")
 }

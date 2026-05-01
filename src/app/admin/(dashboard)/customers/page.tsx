@@ -16,7 +16,7 @@ export default async function AdminCustomersPage() {
     orderBy: { createdAt: "desc" },
     include: {
       _count: {
-        select: { orders: true, quoteRequests: true },
+        select: { orders: true, rfqs: true },
       },
     },
   });
@@ -55,7 +55,7 @@ export default async function AdminCustomersPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-800">
-                    {customer.contactName}
+                    {customer.name}
                   </h3>
                   {customer.companyName && (
                     <div className="flex items-center gap-1 text-xs text-gray-400">
@@ -67,12 +67,12 @@ export default async function AdminCustomersPage() {
               </div>
               <span
                 className={`px-2 py-0.5 rounded-md text-xs font-semibold ${
-                  customer.type === "EXPORT"
+                  customer.customerType === "EXPORT"
                     ? "bg-purple-100 text-purple-700"
                     : "bg-green-100 text-green-700"
                 }`}
               >
-                {customer.type === "EXPORT" ? "Xuất khẩu" : "Nội địa"}
+                {customer.customerType === "EXPORT" ? "Xuất khẩu" : "Nội địa"}
               </span>
             </div>
 
@@ -87,10 +87,10 @@ export default async function AdminCustomersPage() {
                   {customer.email}
                 </div>
               )}
-              {customer.city && (
+              {customer.province && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <MapPin size={14} className="text-gray-400 shrink-0" />
-                  {customer.city}
+                  {customer.province}
                   {customer.country !== "Việt Nam" && (
                     <span className="flex items-center gap-1 text-purple-600">
                       <Globe size={12} /> {customer.country}
@@ -101,7 +101,7 @@ export default async function AdminCustomersPage() {
             </div>
 
             <div className="flex items-center gap-4 pt-3 border-t border-gray-100 text-xs text-gray-400">
-              <span>{customer._count.quoteRequests} báo giá</span>
+              <span>{customer._count.rfqs} báo giá</span>
               <span>{customer._count.orders} đơn hàng</span>
               <span className="ml-auto">
                 {new Date(customer.createdAt).toLocaleDateString("vi-VN")}

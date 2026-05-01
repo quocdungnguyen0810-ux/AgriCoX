@@ -9,7 +9,7 @@ import {
   ExternalLink,
   ArrowUp,
 } from "lucide-react";
-import { companyInfo } from "@/data/content";
+import { companyConfig } from "@/lib/company-config";
 import { useT } from "@/context/LanguageContext";
 
 export default function Footer() {
@@ -66,20 +66,20 @@ export default function Footer() {
             </p>
             <div className="space-y-3 text-sm">
               <a
-                href={`tel:${companyInfo.phone}`}
+                href={`tel:${companyConfig.phone}`}
                 className="flex items-center gap-2.5 text-green-300 hover:text-white transition-colors"
               >
-                <Phone size={16} /> {companyInfo.phone}
+                <Phone size={16} /> {companyConfig.phone}
               </a>
               <a
-                href={`mailto:${companyInfo.email}`}
+                href={`mailto:${companyConfig.email}`}
                 className="flex items-center gap-2.5 text-green-300 hover:text-white transition-colors"
               >
-                <Mail size={16} /> {companyInfo.email}
+                <Mail size={16} /> {companyConfig.email}
               </a>
               <div className="flex items-start gap-2.5 text-green-300">
                 <MapPin size={16} className="mt-0.5 shrink-0" />
-                <span>{companyInfo.address}</span>
+                <span>{companyConfig.address}</span>
               </div>
             </div>
           </div>
@@ -142,7 +142,7 @@ export default function Footer() {
             {/* Social */}
             <div className="flex items-center gap-3 mt-6">
               <a
-                href={companyInfo.facebook}
+                href={companyConfig.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-xl bg-green-800 hover:bg-green-700 flex items-center justify-center transition-colors"
@@ -150,7 +150,7 @@ export default function Footer() {
                 <ExternalLink size={18} />
               </a>
               <a
-                href={`https://zalo.me/${companyInfo.zalo?.replace(/\s/g, "")}`}
+                href={`https://zalo.me/${companyConfig.zalo?.replace(/\s/g, "")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-xl bg-green-800 hover:bg-green-700 flex items-center justify-center transition-colors text-xs font-bold"

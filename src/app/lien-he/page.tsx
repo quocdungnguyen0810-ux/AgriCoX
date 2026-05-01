@@ -12,9 +12,11 @@ import {
   User,
   MessageSquare,
 } from "lucide-react";
-import { companyInfo } from "@/data/content";
+import { companyConfig } from "@/lib/company-config";
+import { useT } from "@/context/LanguageContext";
 
 export default function ContactPage() {
+  const t = useT();
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
@@ -38,16 +40,16 @@ export default function ContactPage() {
         </div>
         <div className="container-custom relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 text-green-200 text-sm mb-6">
-            <Phone size={16} /> Liên hệ
+            <Phone size={16} /> {t.contact.badge}
           </div>
           <h1 className="text-4xl md:text-5xl font-extrabold mb-4">
-            Liên hệ{" "}
+            {t.contact.title1}{" "}
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-300 to-brown-300">
-              với chúng tôi
+              {t.contact.title2}
             </span>
           </h1>
           <p className="text-green-200 text-lg max-w-2xl mx-auto">
-            Đội ngũ GreenPeat luôn sẵn sàng hỗ trợ bạn. Hãy liên hệ qua bất kỳ kênh nào phù hợp.
+            {t.contact.desc}
           </p>
         </div>
       </section>
@@ -65,44 +67,44 @@ export default function ContactPage() {
                 {
                   icon: MapPin,
                   title: "Địa chỉ",
-                  content: companyInfo.address,
+                  content: companyConfig.address,
                   href: null,
                 },
                 {
                   icon: Phone,
                   title: "Hotline",
-                  content: companyInfo.hotline,
-                  href: `tel:${companyInfo.hotline?.replace(/\s/g, "")}`,
+                  content: companyConfig.hotline,
+                  href: `tel:${companyConfig.hotline?.replace(/\s/g, "")}`,
                 },
                 {
                   icon: Phone,
                   title: "Điện thoại",
-                  content: companyInfo.phone,
-                  href: `tel:${companyInfo.phone?.replace(/\s/g, "")}`,
+                  content: companyConfig.phone,
+                  href: `tel:${companyConfig.phone?.replace(/\s/g, "")}`,
                 },
                 {
                   icon: Mail,
                   title: "Email",
-                  content: companyInfo.email,
-                  href: `mailto:${companyInfo.email}`,
+                  content: companyConfig.email,
+                  href: `mailto:${companyConfig.email}`,
                 },
                 {
                   icon: Mail,
                   title: "Email Sales",
-                  content: companyInfo.salesEmail,
-                  href: `mailto:${companyInfo.salesEmail}`,
+                  content: companyConfig.salesEmail,
+                  href: `mailto:${companyConfig.salesEmail}`,
                 },
                 {
                   icon: MessageCircle,
                   title: "Zalo",
-                  content: companyInfo.zalo,
-                  href: `https://zalo.me/${companyInfo.zalo?.replace(/\s/g, "")}`,
+                  content: companyConfig.zalo,
+                  href: `https://zalo.me/${companyConfig.zalo?.replace(/\s/g, "")}`,
                 },
                 {
                   icon: MessageCircle,
                   title: "WhatsApp",
-                  content: companyInfo.whatsapp,
-                  href: `https://wa.me/${companyInfo.whatsapp?.replace(/[+\s]/g, "")}`,
+                  content: companyConfig.whatsapp,
+                  href: `https://wa.me/${companyConfig.whatsapp?.replace(/[+\s]/g, "")}`,
                 },
               ].map((item, i) => (
                 <div key={i} className="flex items-start gap-4 group">
@@ -163,19 +165,19 @@ export default function ContactPage() {
                     }}
                     className="btn-secondary"
                   >
-                    Gửi tin nhắn khác
+                    {t.contact.send}
                   </button>
                 </div>
               ) : (
                 <div className="card p-8">
                   <h3 className="text-xl font-bold text-gray-800 mb-6">
-                    Gửi tin nhắn nhanh
+                    {t.contact.formTitle}
                   </h3>
                   <form onSubmit={handleSubmit} className="space-y-5">
                     <div className="grid md:grid-cols-2 gap-5">
                       <div>
                         <label className="form-label">
-                          <User size={14} className="inline mr-1" /> Họ tên *
+                          <User size={14} className="inline mr-1" /> {t.contact.fullName} *
                         </label>
                         <input
                           type="text"
@@ -185,12 +187,12 @@ export default function ContactPage() {
                             setFormData({ ...formData, name: e.target.value })
                           }
                           className="form-input"
-                          placeholder="Họ và tên"
+                          placeholder={t.contact.fullName}
                         />
                       </div>
                       <div>
                         <label className="form-label">
-                          <Phone size={14} className="inline mr-1" /> Điện thoại *
+                          <Phone size={14} className="inline mr-1" /> {t.contact.phone} *
                         </label>
                         <input
                           type="tel"
@@ -206,7 +208,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <label className="form-label">
-                        <Mail size={14} className="inline mr-1" /> Email
+                        <Mail size={14} className="inline mr-1" /> {t.contact.email}
                       </label>
                       <input
                         type="email"
@@ -220,7 +222,7 @@ export default function ContactPage() {
                     </div>
                     <div>
                       <label className="form-label">
-                        <MessageSquare size={14} className="inline mr-1" /> Nội dung *
+                        <MessageSquare size={14} className="inline mr-1" /> {t.contact.message} *
                       </label>
                       <textarea
                         rows={5}
@@ -230,11 +232,11 @@ export default function ContactPage() {
                           setFormData({ ...formData, message: e.target.value })
                         }
                         className="form-input resize-none"
-                        placeholder="Nội dung bạn muốn trao đổi..."
+                        placeholder={t.contact.message}
                       />
                     </div>
                     <button type="submit" className="btn-primary w-full !py-3.5">
-                      <Send size={18} /> Gửi tin nhắn
+                      <Send size={18} /> {t.contact.send}
                     </button>
                   </form>
                 </div>

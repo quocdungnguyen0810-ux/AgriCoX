@@ -113,6 +113,7 @@ export const en: Dictionary = {
     successDesc: "Please save your RFQ code above for tracking. Our sales team will contact you within 2 business hours.",
     continueShopping: "Continue Shopping",
     goHome: "Go to Homepage",
+    errorGeneric: "Something went wrong. Please try again.",
   },
 
   order: {
@@ -140,6 +141,7 @@ export const en: Dictionary = {
     successDesc: "Thank you for your interest in AgriCoX products. Our sales team will contact you within 2 business hours.",
     sendAnother: "Send Another Request",
     viewProducts: "View Products",
+    errorGeneric: "Something went wrong. Please try again.",
   },
 
   about: {
@@ -192,5 +194,15 @@ export const en: Dictionary = {
     title1: "Successful",
     title2: "Projects",
     desc: "High-tech agricultural projects using AgriCoX cocopeat substrates across Vietnam and worldwide.",
+  },
+
+  cartDrawer: {
+    title: "Quote Cart",
+    emptyTitle: "No products yet",
+    emptyDesc: "Browse our catalog to add products",
+    totalProducts: "Total products:",
+    itemsUnit: "items",
+    submitRfq: "Submit Quote Request",
+    clearAll: "Clear all",
   },
 };

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ShoppingCart,
   Minus,
@@ -19,11 +20,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { useT } from "@/context/LanguageContext";
+import { useLanguage } from "@/context/LanguageContext";
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, clearCart } = useCart();
-  const t = useT();
+  const { locale, t } = useLanguage();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -47,6 +48,7 @@ export default function CartPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((item) => ({
+            productId: item.productId,
             productName: item.productName,
             quantity: item.quantity,
             specification: item.specification,
@@ -56,20 +58,21 @@ export default function CartPage() {
           contactPhone: contactInfo.phone,
           contactEmail: contactInfo.email,
           message: contactInfo.notes,
+          locale,
         }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || "Có lỗi xảy ra");
+        throw new Error(data.error || t.cart.errorGeneric);
       }
 
       setRfqCode(data.rfqCode);
       setSubmitted(true);
       clearCart();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Có lỗi xảy ra. Vui lòng thử lại.");
+      setError(err instanceof Error ? err.message : t.cart.errorGeneric);
     } finally {
       setLoading(false);
     }
@@ -164,8 +167,12 @@ export default function CartPage() {
                     key={item.productId}
                     className="card p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center"
                   >
-                    <div className="w-16 h-16 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
-                      <ShoppingCart size={24} className="text-green-400" />
+                    <div className="w-16 h-16 rounded-xl bg-green-50 flex items-center justify-center shrink-0 overflow-hidden">
+                      {item.image ? (
+                        <Image src={item.image} alt={item.productName} width={64} height={64} className="object-cover w-full h-full" />
+                      ) : (
+                        <ShoppingCart size={24} className="text-green-400" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-gray-800">

@@ -10,8 +10,13 @@ import {
 } from "lucide-react";
 
 export default async function AdminProductsPage() {
-  const products = await prisma.productRecord.findMany({
+  const productsRaw = await prisma.product.findMany({
     orderBy: { sortOrder: "asc" },
+    include: { translations: { where: { locale: "vi" } }, category: { include: { translations: { where: { locale: "vi" } } } } },
+  });
+  const products = productsRaw.map((p) => {
+    const t = p.translations[0];
+    return { id: p.id, slug: p.slug, sku: p.sku, name: t?.name || p.sku, description: t?.shortDescription || "", packaging: t?.packaging || "", moq: p.moq || "", status: p.status, category: p.category?.translations?.[0]?.name || p.category?.slug || "" };
   });
 
   return (
@@ -95,12 +100,12 @@ export default async function AdminProductsPage() {
                   <td className="px-6 py-4 text-center">
                     <span
                       className={`inline-flex px-2.5 py-1 rounded-lg text-xs font-semibold ${
-                        product.isActive
+                        product.status === "ACTIVE"
                           ? "bg-green-100 text-green-700"
                           : "bg-gray-100 text-gray-500"
                       }`}
                     >
-                      {product.isActive ? "Đang bán" : "Ẩn"}
+                      {product.status === "ACTIVE" ? "Đang bán" : "Ẩn"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center">

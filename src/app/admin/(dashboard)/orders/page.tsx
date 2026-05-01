@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import prisma from "@/lib/prisma";
+import Link from "next/link";
 import {
   ShoppingCart,
   Clock,
@@ -9,50 +10,30 @@ import {
   Package,
   Search,
   TrendingUp,
+  FileText,
+  FileCheck,
 } from "lucide-react";
 import { OrderActions } from "./OrderActions";
+import { orderStatusLabels, orderStatusColors, paymentStatusLabels, paymentStatusColors } from "@/lib/order-status";
 
-const statusColors: Record<string, string> = {
-  REQUEST_RECEIVED: "bg-blue-100 text-blue-700",
-  QUOTATION_SENT: "bg-yellow-100 text-yellow-700",
-  PO_RECEIVED: "bg-orange-100 text-orange-700",
-  CONTRACT_SIGNED: "bg-green-100 text-green-700",
-  PRODUCTION: "bg-indigo-100 text-indigo-700",
-  QC_INSPECTION: "bg-purple-100 text-purple-700",
-  PACKING: "bg-pink-100 text-pink-700",
-  SHIPPING: "bg-cyan-100 text-cyan-700",
-  DELIVERED: "bg-emerald-100 text-emerald-700",
-  COMPLETED: "bg-green-200 text-green-800",
-  CANCELLED: "bg-red-100 text-red-700",
-};
 
-const statusLabels: Record<string, string> = {
-  REQUEST_RECEIVED: "Tiếp nhận",
-  QUOTATION_SENT: "Đã gửi báo giá",
-  PO_RECEIVED: "Nhận PO",
-  CONTRACT_SIGNED: "Đã ký HĐ",
-  PRODUCTION: "Sản xuất",
-  QC_INSPECTION: "Kiểm tra QC",
-  PACKING: "Đóng gói",
-  SHIPPING: "Đang giao",
-  DELIVERED: "Đã giao",
-  COMPLETED: "Hoàn thành",
-  CANCELLED: "Đã hủy",
-};
 
 export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({
     orderBy: { createdAt: "desc" },
     include: {
-      customer: { select: { companyName: true, contactName: true } },
+      customer: { select: { companyName: true, name: true } },
       assignee: { select: { name: true } },
       items: true,
+      quote: { select: { id: true, quoteCode: true } },
+      contract: { select: { id: true, contractCode: true } },
       statusLogs: {
         orderBy: { changedAt: "desc" },
         take: 3,
       },
     },
   });
+
 
   return (
     <div className="space-y-6">
@@ -80,18 +61,18 @@ export default async function AdminOrdersPage() {
         {[
           { label: "Tổng đơn", value: orders.length, color: "text-gray-800" },
           {
-            label: "Đang xử lý",
+            label: "Đơn mới",
             value: orders.filter((o) =>
-              ["REQUEST_RECEIVED", "QUOTATION_SENT", "PO_RECEIVED", "CONTRACT_SIGNED"].includes(o.status)
-            ).length,
-            color: "text-orange-600",
-          },
-          {
-            label: "Sản xuất/Giao",
-            value: orders.filter((o) =>
-              ["PRODUCTION", "QC_INSPECTION", "PACKING", "SHIPPING"].includes(o.status)
+              ["NEW", "CONFIRMED"].includes(o.status)
             ).length,
             color: "text-blue-600",
+          },
+          {
+            label: "Đang xử lý",
+            value: orders.filter((o) =>
+              ["PRODUCING", "QUALITY_CHECK", "PACKING", "SHIPPED"].includes(o.status)
+            ).length,
+            color: "text-indigo-600",
           },
           {
             label: "Hoàn thành",
@@ -101,6 +82,7 @@ export default async function AdminOrdersPage() {
             color: "text-green-600",
           },
         ].map((stat) => (
+
           <div
             key={stat.label}
             className="bg-white rounded-xl border border-gray-100 p-4 text-center"
@@ -133,22 +115,53 @@ export default async function AdminOrdersPage() {
                     <Clock size={12} />
                     {new Date(order.createdAt).toLocaleString("vi-VN")}
                   </div>
+                  {/* Source links */}
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {order.quote && (
+                      <Link
+                        href={`/admin/quotes/${order.quote.id}`}
+                        className="text-[10px] bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100 hover:bg-indigo-100 flex items-center gap-1"
+                      >
+                        <FileText size={10} />
+                        BG: {order.quote.quoteCode}
+                      </Link>
+                    )}
+                    {order.contract && (
+                      <Link
+                        href={`/admin/contracts`}
+                        className="text-[10px] bg-green-50 text-green-600 px-1.5 py-0.5 rounded border border-green-100 hover:bg-green-100 flex items-center gap-1"
+                      >
+                        <FileCheck size={10} />
+                        HĐ: {order.contract.contractCode}
+                      </Link>
+                    )}
+                  </div>
                 </div>
               </div>
-              <span
-                className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
-                  statusColors[order.status] || "bg-gray-100 text-gray-600"
-                }`}
-              >
-                {statusLabels[order.status] || order.status}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+                    orderStatusColors[order.status] || "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {orderStatusLabels[order.status] || order.status}
+                </span>
+                <span
+                  className={`px-2 py-1 rounded-md text-xs font-medium ${
+                    paymentStatusColors[order.paymentStatus] || "bg-gray-100 text-gray-500"
+                  }`}
+                >
+                  {paymentStatusLabels[order.paymentStatus] || order.paymentStatus}
+                </span>
+              </div>
             </div>
+
 
             <div className="grid md:grid-cols-2 gap-4 mb-4">
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <User size={14} className="text-gray-400" />
-                  {order.customer.contactName}
+                  {order.customer.name}
                 </div>
                 {order.customer.companyName && (
                   <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -175,7 +188,7 @@ export default async function AdminOrdersPage() {
                     >
                       <span className="text-gray-700 font-medium flex items-center gap-1.5">
                         <Package size={12} className="text-gray-400" />
-                        {item.productName}
+                        {item.productNameSnapshot}
                       </span>
                       <span className="text-gray-500">x{item.quantity}</span>
                     </div>
@@ -194,7 +207,7 @@ export default async function AdminOrdersPage() {
                   {order.statusLogs.map((log) => (
                     <div key={log.id} className="flex items-center gap-2 text-xs text-gray-500">
                       <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
-                      <span className="font-medium">{statusLabels[log.toStatus] || log.toStatus}</span>
+                      <span className="font-medium">{orderStatusLabels[log.newStatus] || log.newStatus}</span>
                       <span>•</span>
                       <span>{new Date(log.changedAt).toLocaleString("vi-VN")}</span>
                       {log.note && <span className="text-gray-400">— {log.note}</span>}
@@ -204,8 +217,13 @@ export default async function AdminOrdersPage() {
               </div>
             )}
 
+
             {/* Actions */}
-            <OrderActions orderId={order.id} currentStatus={order.status} />
+            <OrderActions
+              orderId={order.id}
+              currentStatus={order.status}
+              contractId={order.contract?.id}
+            />
           </div>
         ))}
 
