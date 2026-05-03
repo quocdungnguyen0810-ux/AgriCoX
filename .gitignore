@@ -48,3 +48,8 @@ next-env.d.ts
 prisma/dev.db
 
 .vercel
+
+# uploads
+/public/uploads/
+*.log
+*.pdf
