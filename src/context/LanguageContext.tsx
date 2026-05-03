@@ -20,13 +20,11 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>("vi");
-
-  useEffect(() => {
-    // Read from cookie
+  const [locale, setLocaleState] = useState<Locale>(() => {
+    if (typeof document === "undefined") return "vi";
     const match = document.cookie.match(/locale=(vi|en)/);
-    if (match) setLocaleState(match[1] as Locale);
-  }, []);
+    return (match?.[1] as Locale) ?? "vi";
+  });
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);

@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import prisma from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import QuoteEditor from "./QuoteEditor";
+import { DocumentUploadPanel } from "@/components/admin/DocumentUploadPanel";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -11,14 +12,20 @@ interface PageProps {
 export default async function QuoteDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const quote = await prisma.quote.findUnique({
-    where: { id },
-    include: {
-      items: { orderBy: { productNameSnapshot: "asc" } },
-      rfq: { select: { rfqCode: true, contactName: true, companyName: true, contactPhone: true, contactEmail: true, deliveryAddress: true, message: true } },
-      creator: { select: { name: true } },
-    },
-  });
+  const [quote, generatedDocuments] = await Promise.all([
+    prisma.quote.findUnique({
+      where: { id },
+      include: {
+        items: { orderBy: { productNameSnapshot: "asc" } },
+        rfq: { select: { rfqCode: true, contactName: true, companyName: true, contactPhone: true, contactEmail: true, deliveryAddress: true, message: true } },
+        creator: { select: { name: true } },
+      },
+    }),
+    prisma.generatedDocument.findMany({
+      where: { entityType: "QUOTE", entityId: id },
+      orderBy: { generatedAt: "desc" },
+    }),
+  ]);
 
   if (!quote) notFound();
 
@@ -66,5 +73,22 @@ export default async function QuoteDetailPage({ params }: PageProps) {
     })),
   };
 
-  return <QuoteEditor quote={serialized} />;
+  return (
+    <div className="space-y-6 max-w-5xl">
+      <QuoteEditor key={serialized.updatedAt} quote={serialized} />
+      <DocumentUploadPanel
+        entityType="QUOTE"
+        entityId={quote.id}
+        referenceCode={quote.quoteCode}
+        documents={generatedDocuments.map((doc) => ({
+          id: doc.id,
+          documentType: doc.documentType,
+          fileName: doc.fileName,
+          fileUrl: doc.fileUrl,
+          storageProvider: doc.storageProvider,
+          generatedAt: doc.generatedAt.toISOString(),
+        }))}
+      />
+    </div>
+  );
 }

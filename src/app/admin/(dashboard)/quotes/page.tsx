@@ -14,7 +14,9 @@ import {
   ReceiptText,
 } from "lucide-react";
 import { QuoteActions } from "./QuoteActions";
+import { CreateQuoteButton } from "./CreateQuoteButton";
 import { quoteStatusLabels, quoteStatusColors } from "@/lib/quote-status";
+import { auth } from "@/lib/auth";
 
 // ── RFQ status display ──
 const rfqStatusColors: Record<string, string> = {
@@ -54,7 +56,7 @@ export default async function AdminQuotesPage({ searchParams }: PageProps) {
   const { tab } = await searchParams;
   const activeTab = tab === "quotes" ? "quotes" : "rfqs";
 
-  const [rfqs, salesUsers, quotes] = await Promise.all([
+  const [rfqs, salesUsers, quotes, customers, session] = await Promise.all([
     prisma.rfq.findMany({
       orderBy: { createdAt: "desc" },
       include: {
@@ -73,7 +75,14 @@ export default async function AdminQuotesPage({ searchParams }: PageProps) {
         customer: { select: { name: true, companyName: true } },
       },
     }),
+    prisma.customer.findMany({
+      select: { id: true, name: true, companyName: true },
+      orderBy: { name: 'asc' }
+    }),
+    auth(),
   ]);
+
+  const user = session?.user;
 
   return (
     <div className="space-y-6">
@@ -89,6 +98,9 @@ export default async function AdminQuotesPage({ searchParams }: PageProps) {
               className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent w-64"
             />
           </div>
+          {activeTab === "quotes" && (
+            <CreateQuoteButton customers={customers as any} userId={user?.id || ""} />
+          )}
         </div>
       </div>
 

@@ -42,7 +42,7 @@ export function OrderActions({ orderId, currentStatus, contractId }: OrderAction
       // createdBy placeholder for now as per Step 5B.4 plan
       const result = await createContractFromOrder(orderId, "");
       if (result.success) {
-        router.push("/admin/contracts");
+        router.push(`/admin/contracts/${result.data?.contractId}`);
       } else {
         setError(result.error.message);
       }

@@ -14,25 +14,36 @@ import {
   FileCheck,
 } from "lucide-react";
 import { OrderActions } from "./OrderActions";
+import { CreateOrderButton } from "./CreateOrderButton";
 import { orderStatusLabels, orderStatusColors, paymentStatusLabels, paymentStatusColors } from "@/lib/order-status";
+import { auth } from "@/lib/auth";
 
 
 
 export default async function AdminOrdersPage() {
-  const orders = await prisma.order.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      customer: { select: { companyName: true, name: true } },
-      assignee: { select: { name: true } },
-      items: true,
-      quote: { select: { id: true, quoteCode: true } },
-      contract: { select: { id: true, contractCode: true } },
-      statusLogs: {
-        orderBy: { changedAt: "desc" },
-        take: 3,
+  const [orders, customers, session] = await Promise.all([
+    prisma.order.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+        customer: { select: { companyName: true, name: true } },
+        assignee: { select: { name: true } },
+        items: true,
+        quote: { select: { id: true, quoteCode: true } },
+        contract: { select: { id: true, contractCode: true } },
+        statusLogs: {
+          orderBy: { changedAt: "desc" },
+          take: 3,
+        },
       },
-    },
-  });
+    }),
+    prisma.customer.findMany({
+      select: { id: true, name: true, companyName: true },
+      orderBy: { name: 'asc' }
+    }),
+    auth(),
+  ]);
+
+  const user = session?.user;
 
 
   return (
@@ -53,6 +64,7 @@ export default async function AdminOrdersPage() {
               className="pl-10 pr-4 py-2 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent w-64"
             />
           </div>
+          <CreateOrderButton customers={customers as any} userId={user?.id || ""} />
         </div>
       </div>
 
@@ -109,7 +121,9 @@ export default async function AdminOrdersPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-gray-800 text-lg">
-                    {order.orderCode}
+                    <Link href={`/admin/orders/${order.id}`} className="hover:text-green-700 transition-colors">
+                      {order.orderCode}
+                    </Link>
                   </h3>
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <Clock size={12} />

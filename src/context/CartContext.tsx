@@ -24,27 +24,21 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const saved = localStorage.getItem("agricox-rfq-cart");
+      return saved ? (JSON.parse(saved) as CartItem[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [isOpen, setIsOpen] = useState(false);
-  const [loaded, setLoaded] = useState(false);
 
+  // Persist to localStorage on change
   useEffect(() => {
-    const saved = localStorage.getItem("agricox-rfq-cart");
-    if (saved) {
-      try {
-        setItems(JSON.parse(saved));
-      } catch {
-        // ignore
-      }
-    }
-    setLoaded(true);
-  }, []);
-
-  useEffect(() => {
-    if (loaded) {
-      localStorage.setItem("agricox-rfq-cart", JSON.stringify(items));
-    }
-  }, [items, loaded]);
+    localStorage.setItem("agricox-rfq-cart", JSON.stringify(items));
+  }, [items]);
 
   const addItem = useCallback((item: CartItem) => {
     setItems((prev) => {

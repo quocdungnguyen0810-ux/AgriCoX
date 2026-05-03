@@ -21,10 +21,17 @@ import {
   RefreshCw,
   Globe,
   BadgeInfo,
-  ShoppingCart,
   ExternalLink,
+  DownloadCloud,
+  Plus,
+  Trash2,
+  Search,
+  Package,
+  ShoppingCart,
 } from "lucide-react";
-import { updateQuoteItems, updateQuoteDetails, updateQuoteStatus, createOrderFromQuote } from "@/app/admin/actions";
+import { updateQuoteItems, updateQuoteDetails, updateQuoteStatus, addQuoteItem, removeQuoteItem } from "@/app/admin/actions/quote";
+import { createOrderFromQuote } from "@/app/admin/actions/order";
+import { searchProducts } from "@/app/admin/actions/products";
 import { quoteStatusLabels, quoteStatusColors, quoteStatusTransitions } from "@/lib/quote-status";
 import { calculateQuote, formatVND } from "@/lib/quote-calculation";
 
@@ -41,6 +48,12 @@ interface QuoteItem {
   discountRate: number;
   totalPrice: number;
   note: string;
+}
+
+interface ProductSearchResult {
+  id: string;
+  name: string;
+  sku: string;
 }
 
 interface QuoteData {
@@ -167,11 +180,69 @@ export default function QuoteEditor({ quote }: { quote: QuoteData }) {
     });
   };
 
+  // Add Item logic
+  const [productSearch, setProductSearch] = useState("");
+  const [foundProducts, setFoundProducts] = useState<ProductSearchResult[]>([]);
+  const [customItem, setCustomItem] = useState({ name: "", quantity: 1, unitPrice: 0, unit: "pcs" });
+
+  const handleSearch = async (q: string) => {
+    setProductSearch(q);
+    if (q.length > 1) {
+      const res = await searchProducts(q);
+      if (res.success) setFoundProducts(res.data || []);
+    } else {
+      setFoundProducts([]);
+    }
+  };
+
+  const handleAddItem = (productId: string) => {
+    startTransition(async () => {
+      const res = await addQuoteItem(quote.id, productId);
+      if (res.success) {
+        setProductSearch("");
+        setFoundProducts([]);
+        router.refresh();
+      }
+    });
+  };
+
+  const handleAddCustomItem = () => {
+    if (!customItem.name.trim()) {
+      setSaveMsg({ type: "error", text: "Vui lòng nhập tên sản phẩm tùy chỉnh" });
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await addQuoteItem(quote.id, undefined, {
+        name: customItem.name.trim(),
+        quantity: Math.max(1, customItem.quantity || 1),
+        unitPrice: Math.max(0, customItem.unitPrice || 0),
+        unit: customItem.unit.trim() || "pcs",
+      });
+      if (res.success) {
+        setCustomItem({ name: "", quantity: 1, unitPrice: 0, unit: "pcs" });
+        setSaveMsg(null);
+        router.refresh();
+      } else {
+        setSaveMsg({ type: "error", text: res.error.message });
+      }
+    });
+  };
+
+  const handleRemoveItem = (itemId: string) => {
+    if (!confirm("Xác nhận xóa sản phẩm này khỏi báo giá?")) return;
+    startTransition(async () => {
+      const res = await removeQuoteItem(itemId);
+      if (res.success) {
+        router.refresh();
+      }
+    });
+  };
+
   // Quote → Order conversion
   const handleCreateOrder = () => {
     setSaveMsg(null);
     startConverting(async () => {
-      // TODO(Phase 7): Replace "" with session.user.id when auth is standardized
       const result = await createOrderFromQuote(quote.id, "");
       if (!result.success) {
         setSaveMsg({ type: "error", text: result.error.message });
@@ -311,8 +382,19 @@ export default function QuoteEditor({ quote }: { quote: QuoteData }) {
               <tbody>
                 {items.map((item, idx) => (
                   <Fragment key={item.id}>
-                    <tr className="border-b border-gray-50 hover:bg-gray-50/40">
-                      <td className="py-3 px-2 text-gray-400 align-top">{idx + 1}</td>
+                    <tr className="border-b border-gray-50 hover:bg-gray-50/40 group">
+                      <td className="py-3 px-2 text-gray-400 align-top">
+                        {isEditable ? (
+                          <button 
+                            onClick={() => handleRemoveItem(item.id)}
+                            className="p-1 rounded bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        ) : (
+                          idx + 1
+                        )}
+                      </td>
                       <td className="py-3 px-2 font-medium text-gray-800 align-top">{item.productNameSnapshot}</td>
                       <td className="py-3 px-2 text-gray-500 text-xs align-top">{item.packagingSnapshot || "—"}</td>
 
@@ -396,6 +478,85 @@ export default function QuoteEditor({ quote }: { quote: QuoteData }) {
                     )}
                   </Fragment>
                 ))}
+
+                {isEditable && (
+                  <tr>
+                    <td colSpan={8} className="py-4">
+                      <div className="relative space-y-3">
+                        <div className="flex items-center gap-2 p-1 pl-3 bg-gray-50 border border-gray-100 rounded-xl focus-within:ring-2 focus-within:ring-indigo-400 transition-all">
+                          <Search size={14} className="text-gray-400" />
+                          <input 
+                            type="text" 
+                            placeholder="Thêm sản phẩm mới..."
+                            value={productSearch}
+                            onChange={e => handleSearch(e.target.value)}
+                            className="flex-1 bg-transparent border-none py-2 text-sm focus:outline-none"
+                          />
+                        </div>
+
+                        {foundProducts.length > 0 && (
+                          <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white rounded-2xl border border-gray-100 shadow-2xl p-2 max-h-60 overflow-y-auto">
+                            {foundProducts.map(p => (
+                              <button
+                                key={p.id}
+                                onClick={() => handleAddItem(p.id)}
+                                className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-indigo-50 transition-colors text-left"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400">
+                                    <Package size={14} />
+                                  </div>
+                                  <div>
+                                    <div className="text-xs font-bold text-gray-800">{p.name}</div>
+                                    <div className="text-[10px] text-gray-400">{p.sku}</div>
+                                  </div>
+                                </div>
+                                <Plus size={14} className="text-indigo-400" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-[1fr_88px_88px_132px_auto] gap-2">
+                          <input
+                            type="text"
+                            placeholder="Sản phẩm tùy chỉnh..."
+                            value={customItem.name}
+                            onChange={(e) => setCustomItem((prev) => ({ ...prev, name: e.target.value }))}
+                            className="border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
+                          />
+                          <input
+                            type="number"
+                            min={1}
+                            value={customItem.quantity}
+                            onChange={(e) => setCustomItem((prev) => ({ ...prev, quantity: parseInt(e.target.value) || 1 }))}
+                            className="border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
+                          />
+                          <input
+                            type="text"
+                            value={customItem.unit}
+                            onChange={(e) => setCustomItem((prev) => ({ ...prev, unit: e.target.value }))}
+                            className="border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            value={customItem.unitPrice}
+                            onChange={(e) => setCustomItem((prev) => ({ ...prev, unitPrice: parseFloat(e.target.value) || 0 }))}
+                            className="border border-gray-200 rounded-lg py-2 px-3 text-sm focus:ring-2 focus:ring-indigo-300 focus:border-transparent"
+                          />
+                          <button
+                            onClick={handleAddCustomItem}
+                            disabled={isPending}
+                            className="px-4 py-2 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold hover:bg-indigo-100 disabled:opacity-50"
+                          >
+                            Thêm
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -615,6 +776,16 @@ export default function QuoteEditor({ quote }: { quote: QuoteData }) {
               Báo giá này đã kết thúc — không thể thay đổi thêm.
             </span>
           )}
+
+          {/* Download PDF button (always available except for very early drafts without items) */}
+          <a
+            href={`/api/quotes/${quote.id}/pdf`}
+            target="_blank"
+            className="px-5 py-2.5 rounded-xl bg-gray-50 border border-gray-200 text-gray-700 text-sm font-semibold flex items-center gap-2 hover:bg-gray-100 transition-colors"
+          >
+            <DownloadCloud size={16} />
+            Tải PDF Báo Giá
+          </a>
 
         </div>
 

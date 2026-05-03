@@ -335,6 +335,12 @@ model Order {
   customer             Customer         @relation(fields: [customerId], references: [id])
   quote                Quote?           @relation(fields: [quoteId], references: [id])
 
+  // Accounting & Logistics relations
+  invoices             Invoice[]
+  receipts             PaymentReceipt[]
+  deliveryNotes        DeliveryNote[]
+  attachments          DocumentAttachment[]
+
   @@map("orders")
 }
 
@@ -499,7 +505,8 @@ model GeneratedDocument {
   googleDriveFileId   String?  // Phase 6B: Google Drive file ID
   googleDriveFolderId String?  // Phase 6B: Google Drive folder ID
   version             Int      @default(1)
-  status              String   @default("GENERATED") // GENERATED | ARCHIVED | DELETED
+  status              String   @default("GENERATED") // DRAFT | GENERATED | ARCHIVED | DELETED
+  dataJson            String?  // JSON string for editable fields
   generatedBy         String?  // User ID who triggered generation
   generatedAt         DateTime @default(now())
   createdAt           DateTime @default(now())
@@ -507,4 +514,93 @@ model GeneratedDocument {
   @@index([entityType, entityId])
   @@index([documentType, format])
   @@map("generated_documents")
+}
+
+model FailedSyncJob {
+  id        String   @id @default(cuid())
+  jobType   String   // "SHEET_QUOTE" | "SHEET_ORDER" | "SHEET_CONTRACT" | "DRIVE_PDF"
+  payload   String   // JSON stringified arguments to retry with
+  errorMsg  String?
+  retries   Int      @default(0)
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("failed_sync_jobs")
+}
+
+// -----------------------------------------------------------------------------
+// ACCOUNTING & LOGISTICS
+// -----------------------------------------------------------------------------
+
+model Invoice {
+  id              String           @id @default(cuid())
+  invoiceNumber   String           @unique
+  orderId         String
+  order           Order            @relation(fields: [orderId], references: [id])
+  issueDate       DateTime         @default(now())
+  dueDate         DateTime?
+  totalAmount     Float
+  taxAmount       Float
+  status          String           @default("DRAFT") // DRAFT | ISSUED | PAID | CANCELLED
+  pdfUrl          String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  receipts        PaymentReceipt[]
+
+  @@map("invoices")
+}
+
+model PaymentReceipt {
+  id              String           @id @default(cuid())
+  receiptNumber   String           @unique
+  orderId         String
+  order           Order            @relation(fields: [orderId], references: [id])
+  invoiceId       String?
+  invoice         Invoice?         @relation(fields: [invoiceId], references: [id])
+  amount          Float
+  paymentMethod   String           @default("BANK_TRANSFER") // CASH | BANK_TRANSFER
+  paymentDate     DateTime         @default(now())
+  referenceCode   String?
+  proofFileUrl    String?
+  pdfUrl          String?
+  note            String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("payment_receipts")
+}
+
+model DeliveryNote {
+  id              String           @id @default(cuid())
+  deliveryNumber  String           @unique
+  orderId         String
+  order           Order            @relation(fields: [orderId], references: [id])
+  driverName      String?
+  licensePlate    String?
+  trackingCode    String?
+  shippingCompany String?
+  status          String           @default("SHIPPING") // DRAFT | SHIPPING | DELIVERED | RETURNED
+  deliveryDate    DateTime?
+  pdfUrl          String?
+  signedProofUrl  String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("delivery_notes")
+}
+
+model DocumentAttachment {
+  id              String           @id @default(cuid())
+  orderId         String
+  order           Order            @relation(fields: [orderId], references: [id])
+  documentType    String           // CO | CQ | BL | PHYTOSANITARY | OTHER
+  fileName        String
+  fileUrl         String
+  uploadedBy      String?
+  note            String?
+  createdAt       DateTime         @default(now())
+
+  @@map("document_attachments")
 }

@@ -29,7 +29,7 @@ export default async function AdminContractsPage() {
     orderBy: { createdAt: "desc" },
     include: {
       customer: { select: { companyName: true, name: true } },
-      order: { select: { id: true, orderCode: true } },
+      order: { select: { id: true, orderCode: true, totalAmount: true } },
       quote: { select: { id: true, quoteCode: true } },
       rfq: { select: { id: true, rfqCode: true } },
     },
@@ -144,7 +144,7 @@ export default async function AdminContractsPage() {
                         </span>
                       </td>
                       <td className="py-3 px-4 text-right font-semibold text-gray-800">
-                        {formatVND(c.totalAmount)}
+                        {formatVND(c.totalAmount || c.order?.totalAmount || 0)}
                       </td>
                       <td className="py-3 px-4 text-center text-gray-500">
                         {formatDate(c.contractDate)}
@@ -174,7 +174,6 @@ export default async function AdminContractsPage() {
       </div>
 
       {/* TODO Roadmap */}
-      {/* TODO(Phase 5B.6): Add contract content editor */}
       {/* TODO(Phase 6A): Preview and Download PDF */}
       {/* TODO(Phase 6B): Upload contract folder/files to Google Drive */}
     </div>

@@ -9,8 +9,8 @@
  * TODO(Phase 5B.12): Add draw signature canvas and upload signature image tabs.
  */
 
-import { useState, useTransition } from "react";
-import { submitTypedSignature, rejectContractSignature } from "../actions";
+import { useState, useTransition, useRef, useEffect } from "react";
+import { submitTypedSignature, submitDrawnSignature, rejectContractSignature } from "../actions";
 import {
   Type,
   PenLine,
@@ -21,6 +21,7 @@ import {
   AlertCircle,
   MessageSquareWarning,
   Send,
+  Eraser
 } from "lucide-react";
 
 interface SigningFormProps {
@@ -49,6 +50,71 @@ export default function SigningForm({
   const [rejectReason, setRejectReason] = useState("");
   const [showRejectForm, setShowRejectForm] = useState(false);
 
+  // Canvas state
+  const [method, setMethod] = useState<"TYPE" | "DRAW">("TYPE");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+
+  useEffect(() => {
+    if (method === "DRAW" && canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      if (ctx) {
+        ctx.strokeStyle = "#166534"; // green-800
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+      }
+    }
+  }, [method]);
+
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement> | TouchEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    
+    // Type assertion or checking for TouchEvent properties
+    if ('touches' in e && e.touches && e.touches.length > 0) {
+      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    }
+    
+    // It's a MouseEvent
+    const mouseEvent = e as React.MouseEvent<HTMLCanvasElement>;
+    return { x: mouseEvent.clientX - rect.left, y: mouseEvent.clientY - rect.top };
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    setIsDrawing(true);
+    const { x, y } = getCoordinates(e);
+    const ctx = canvasRef.current?.getContext("2d");
+    if (ctx) { ctx.beginPath(); ctx.moveTo(x, y); }
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDrawing) return;
+    const { x, y } = getCoordinates(e);
+    const ctx = canvasRef.current?.getContext("2d");
+    if (ctx) { ctx.lineTo(x, y); ctx.stroke(); }
+  };
+
+  const stopDrawing = () => setIsDrawing(false);
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      ctx?.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  };
+
+  const isCanvasEmpty = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return true;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return true;
+    const pixelBuffer = new Uint32Array(ctx.getImageData(0, 0, canvas.width, canvas.height).data.buffer);
+    return !pixelBuffer.some(color => color !== 0);
+  };
+
   const roleName = signerRole === "CUSTOMER" ? "Khách hàng" : "Đại diện GreenPeat";
 
   const canSubmit =
@@ -59,14 +125,19 @@ export default function SigningForm({
 
   function handleSubmit() {
     if (!canSubmit) return;
+    if (method === "DRAW" && isCanvasEmpty()) {
+      setResult({ success: false, message: "Vui lòng vẽ chữ ký của bạn vào ô trống." });
+      return;
+    }
 
     startTransition(async () => {
-      const res = await submitTypedSignature(
-        contractId,
-        rawToken,
-        typedName.trim(),
-        consent
-      );
+      let res;
+      if (method === "TYPE") {
+        res = await submitTypedSignature(contractId, rawToken, typedName.trim(), consent);
+      } else {
+        const dataUrl = canvasRef.current?.toDataURL("image/png") || "";
+        res = await submitDrawnSignature(contractId, rawToken, typedName.trim(), dataUrl, consent);
+      }
       setResult({
         success: res.success,
         message: res.success ? res.message : res.error,
@@ -112,7 +183,7 @@ export default function SigningForm({
               <strong>Vai trò:</strong> {roleName}
             </p>
             <p className="text-xs text-green-700 mt-1">
-              <strong>Phương thức:</strong> Chữ ký nhập tên
+              <strong>Phương thức:</strong> {method === "TYPE" ? "Chữ ký nhập tên" : "Chữ ký vẽ"}
             </p>
             <p className="text-xs text-green-700 mt-1">
               <strong>Thời gian:</strong>{" "}
@@ -181,22 +252,23 @@ export default function SigningForm({
       </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-        {/* TYPE_NAME — Active */}
-        <div className="rounded-xl border-2 border-green-400 bg-green-50 p-4 text-center ring-2 ring-green-200">
-          <Type
-            size={24}
-            className="text-green-600 mx-auto mb-2"
-          />
-          <p className="text-sm font-semibold text-green-800">Nhập họ tên</p>
-          <p className="text-xs text-green-600 mt-1">Đang sử dụng</p>
-        </div>
+        {/* TYPE_NAME */}
+        <button 
+          onClick={() => setMethod("TYPE")}
+          className={`rounded-xl border-2 p-4 text-center transition-colors ${method === "TYPE" ? "border-green-400 bg-green-50 ring-2 ring-green-200" : "border-gray-200 bg-gray-50 hover:bg-gray-100"}`}>
+          <Type size={24} className={`${method === "TYPE" ? "text-green-600" : "text-gray-400"} mx-auto mb-2`} />
+          <p className={`text-sm font-semibold ${method === "TYPE" ? "text-green-800" : "text-gray-500"}`}>Nhập họ tên</p>
+          <p className={`text-xs mt-1 ${method === "TYPE" ? "text-green-600" : "text-gray-400"}`}>{method === "TYPE" ? "Đang sử dụng" : "Chọn"}</p>
+        </button>
 
-        {/* DRAW — Disabled placeholder */}
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center opacity-50 cursor-not-allowed">
-          <PenLine size={24} className="text-gray-400 mx-auto mb-2" />
-          <p className="text-sm font-semibold text-gray-500">Vẽ chữ ký</p>
-          <p className="text-xs text-gray-400 mt-1">Sắp ra mắt</p>
-        </div>
+        {/* DRAW */}
+        <button 
+          onClick={() => setMethod("DRAW")}
+          className={`rounded-xl border-2 p-4 text-center transition-colors ${method === "DRAW" ? "border-green-400 bg-green-50 ring-2 ring-green-200" : "border-gray-200 bg-gray-50 hover:bg-gray-100"}`}>
+          <PenLine size={24} className={`${method === "DRAW" ? "text-green-600" : "text-gray-400"} mx-auto mb-2`} />
+          <p className={`text-sm font-semibold ${method === "DRAW" ? "text-green-800" : "text-gray-500"}`}>Vẽ chữ ký</p>
+          <p className={`text-xs mt-1 ${method === "DRAW" ? "text-green-600" : "text-gray-400"}`}>{method === "DRAW" ? "Đang sử dụng" : "Chọn"}</p>
+        </button>
 
         {/* UPLOAD — Disabled placeholder */}
         <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-center opacity-50 cursor-not-allowed">
@@ -206,14 +278,11 @@ export default function SigningForm({
         </div>
       </div>
 
-      {/* ── TYPE_NAME Form ── */}
+      {/* ── Form ── */}
       <div className="space-y-4">
-        {/* Name input */}
+        {/* Name input (Always shown) */}
         <div>
-          <label
-            htmlFor="typed-signature"
-            className="block text-sm font-semibold text-gray-700 mb-1"
-          >
+          <label htmlFor="typed-signature" className="block text-sm font-semibold text-gray-700 mb-1">
             Họ và tên người ký
           </label>
           <input
@@ -222,7 +291,7 @@ export default function SigningForm({
             value={typedName}
             onChange={(e) => {
               setTypedName(e.target.value);
-              if (result) setResult(null); // Clear previous error
+              if (result) setResult(null); 
             }}
             placeholder="Nhập họ và tên đầy đủ"
             className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
@@ -234,18 +303,40 @@ export default function SigningForm({
           )}
         </div>
 
-        {/* Signature preview */}
-        {typedName.trim().length >= 2 && (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
-            <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">
-              Xem trước chữ ký
-            </p>
-            <p
-              className="text-2xl text-gray-800"
-              style={{ fontFamily: "'Brush Script MT', 'Segoe Script', cursive" }}
-            >
-              {typedName.trim()}
-            </p>
+        {/* Signature Input (Conditional) */}
+        {method === "TYPE" ? (
+          typedName.trim().length >= 2 && (
+            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-center">
+              <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Xem trước chữ ký</p>
+              <p className="text-2xl text-gray-800" style={{ fontFamily: "'Brush Script MT', 'Segoe Script', cursive" }}>
+                {typedName.trim()}
+              </p>
+            </div>
+          )
+        ) : (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-semibold text-gray-700">Chữ ký vẽ tay <span className="text-red-500">*</span></label>
+              <button type="button" onClick={clearCanvas} className="text-xs text-gray-500 hover:text-red-600 flex items-center gap-1">
+                <Eraser size={12} /> Xóa làm lại
+              </button>
+            </div>
+            <div className="border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 relative overflow-hidden touch-none h-[150px]">
+              <canvas
+                ref={canvasRef}
+                width={500}
+                height={150}
+                className="w-full h-full cursor-crosshair"
+                onMouseDown={startDrawing}
+                onMouseMove={draw}
+                onMouseUp={stopDrawing}
+                onMouseLeave={stopDrawing}
+                onTouchStart={startDrawing}
+                onTouchMove={(e) => { e.preventDefault(); draw(e); }}
+                onTouchEnd={stopDrawing}
+              />
+              <div className="absolute bottom-2 left-2 pointer-events-none text-gray-300 text-xs">Ký vào khung này</div>
+            </div>
           </div>
         )}
 

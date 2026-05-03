@@ -16,6 +16,9 @@ import {
   AlertCircle,
   ChevronDown,
   ChevronUp,
+  Truck,
+  FileText,
+  CreditCard,
 } from "lucide-react";
 
 /**
@@ -103,16 +106,51 @@ const TRANSITION_BUTTONS: Record<
     icon: Zap,
   },
   // ACTIVE
-  "ACTIVE→COMPLETED": {
-    label: "Hoàn thành hợp đồng",
-    color: "bg-green-700 hover:bg-green-800 text-white",
-    icon: Trophy,
+  "ACTIVE→SHIPPING_LOGISTICS": {
+    label: "Chuyển sang Giao vận & XNK",
+    color: "bg-cyan-600 hover:bg-cyan-700 text-white",
+    icon: Truck,
   },
   "ACTIVE→CANCELLED": {
     label: "Hủy hợp đồng",
     color: "bg-red-500 hover:bg-red-600 text-white",
     icon: XCircle,
     confirm: "Bạn chắc chắn muốn hủy hợp đồng đang hiệu lực?",
+  },
+  // SHIPPING_LOGISTICS
+  "SHIPPING_LOGISTICS→TAX_SETTLEMENT": {
+    label: "Chuyển sang Quyết toán thuế",
+    color: "bg-orange-600 hover:bg-orange-700 text-white",
+    icon: FileText,
+  },
+  "SHIPPING_LOGISTICS→CANCELLED": {
+    label: "Hủy hợp đồng",
+    color: "bg-red-500 hover:bg-red-600 text-white",
+    icon: XCircle,
+    confirm: "Bạn chắc chắn muốn hủy hợp đồng trong giai đoạn vận chuyển?",
+  },
+  // TAX_SETTLEMENT
+  "TAX_SETTLEMENT→ACCOUNTING_FINAL": {
+    label: "Chuyển sang Kế toán quyết toán",
+    color: "bg-rose-600 hover:bg-rose-700 text-white",
+    icon: CreditCard,
+  },
+  "TAX_SETTLEMENT→CANCELLED": {
+    label: "Hủy hợp đồng",
+    color: "bg-red-500 hover:bg-red-600 text-white",
+    icon: XCircle,
+    confirm: "Bạn chắc chắn muốn hủy hợp đồng?",
+  },
+  // ACCOUNTING_FINAL
+  "ACCOUNTING_FINAL→COMPLETED": {
+    label: "Hoàn tất & Đóng hợp đồng",
+    color: "bg-green-700 hover:bg-green-800 text-white",
+    icon: Trophy,
+  },
+  "ACCOUNTING_FINAL→CANCELLED": {
+    label: "Hủy hợp đồng",
+    color: "bg-red-500 hover:bg-red-600 text-white",
+    icon: XCircle,
   },
 };
 

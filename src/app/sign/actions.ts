@@ -17,6 +17,12 @@ import prisma from "@/lib/prisma";
 import { hashSigningToken } from "@/lib/signing-token";
 import { validateContractTransition } from "@/lib/contract-status";
 import { headers } from "next/headers";
+import { renderToStream } from "@react-pdf/renderer";
+import { ContractPDFDocument } from "@/lib/pdf/ContractPDFDocument";
+import { saveFileLocally } from "@/lib/local-storage";
+import { appendContractRow } from "@/lib/sheets";
+import { sanitizeFileName } from "@/lib/file-name";
+import React from "react";
 
 /** The exact consent text shown to signers. */
 const CONSENT_TEXT_VI =
@@ -202,6 +208,175 @@ export async function submitTypedSignature(
 }
 
 /**
+ * Submit a DRAWN signature for a contract.
+ *
+ * @param contractId     — The contract ID from the URL.
+ * @param rawToken       — The raw signing token from the URL query.
+ * @param signerName     — The typed name.
+ * @param signatureImageUrl — The base64 drawn image.
+ * @param consentAccepted — Whether the signer checked the consent box.
+ */
+export async function submitDrawnSignature(
+  contractId: string,
+  rawToken: string,
+  signerName: string,
+  signatureImageUrl: string,
+  consentAccepted: boolean
+): Promise<SubmitResult> {
+  try {
+    if (!rawToken || rawToken.trim() === "") return { success: false, error: "Liên kết ký không hợp lệ." };
+    if (!signerName || signerName.trim().length < 2) return { success: false, error: "Vui lòng nhập họ và tên." };
+    if (!signatureImageUrl || !signatureImageUrl.startsWith("data:image/png;base64,")) return { success: false, error: "Vui lòng vẽ chữ ký." };
+    if (!consentAccepted) return { success: false, error: "Vui lòng xác nhận đồng ý." };
+
+    let tokenHash: string;
+    try {
+      tokenHash = hashSigningToken(rawToken);
+    } catch {
+      return { success: false, error: "Liên kết ký không hợp lệ." };
+    }
+
+    const signature = await prisma.contractSignature.findUnique({
+      where: { signingTokenHash: tokenHash },
+      include: { contract: { select: { id: true, status: true } } },
+    });
+
+    if (!signature || signature.contractId !== contractId || signature.tokenUsedAt !== null || signature.tokenRevokedAt !== null || (signature.tokenExpiresAt && signature.tokenExpiresAt < new Date()) || signature.status !== "PENDING") {
+      return { success: false, error: "Liên kết ký không hợp lệ hoặc đã hết hạn." };
+    }
+
+    const requiredStatus = ROLE_REQUIRED_STATUS[signature.signerRole];
+    if (!requiredStatus || signature.contract.status !== requiredStatus) return { success: false, error: "Hợp đồng không ở trạng thái cho phép ký." };
+
+    const nextStatus = ROLE_NEXT_STATUS[signature.signerRole];
+    if (!validateContractTransition(signature.contract.status, nextStatus)) return { success: false, error: "Không thể chuyển trạng thái." };
+
+    let ipAddress: string | null = null;
+    let userAgent: string | null = null;
+    try {
+      const hdrs = await headers();
+      ipAddress = hdrs.get("x-forwarded-for")?.split(",")[0]?.trim() || hdrs.get("x-real-ip") || null;
+      userAgent = hdrs.get("user-agent") || null;
+    } catch {}
+
+    const now = new Date();
+    const oldStatus = signature.contract.status;
+    const signerLabel = signature.signerRole === "CUSTOMER" ? "Khách hàng" : "Đại diện GreenPeat";
+
+    await prisma.$transaction(async (tx) => {
+      await tx.contractSignature.update({
+        where: { id: signature.id },
+        data: {
+          signatureMethod: "DRAWN",
+          signerName: signerName.trim(),
+          signatureImageUrl,
+          signedConsentText: CONSENT_TEXT_VI,
+          signedAt: now,
+          tokenUsedAt: now,
+          ipAddress,
+          userAgent,
+          status: "SIGNED",
+        },
+      });
+
+      await tx.contract.update({
+        where: { id: contractId },
+        data: { status: nextStatus },
+      });
+
+      await tx.contractStatusLog.create({
+        data: {
+          contractId,
+          oldStatus,
+          newStatus: nextStatus,
+          note: `${signerLabel} đã ký hợp đồng bằng chữ ký vẽ`,
+          changedBy: null,
+        },
+      });
+    });
+
+    // ── NẾU HỢP ĐỒNG ĐÃ KÝ XONG (SIGNED_BY_CUSTOMER), TIẾN HÀNH TẠO PDF VÀ UPLOAD DRIVE ──
+    if (nextStatus === "SIGNED_BY_CUSTOMER") {
+      try {
+        // Fetch full contract data for PDF
+        const fullContract = await prisma.contract.findUnique({
+          where: { id: contractId },
+          include: { customer: true, order: { include: { items: true } }, signatures: true },
+        });
+
+        if (fullContract) {
+          const customerSignature = fullContract.signatures.find(s => s.signerRole === "CUSTOMER");
+          const greenpeatSignature = fullContract.signatures.find(s => s.signerRole === "GREENPEAT_SIGNER");
+
+          const stream = await renderToStream(
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            React.createElement(ContractPDFDocument, {
+              contract: fullContract as any,
+              customerSignature: customerSignature as any,
+              greenpeatSignature: greenpeatSignature as any
+            }) as any
+          );
+
+          // Chuyển stream thành buffer
+          const chunks: Buffer[] = [];
+          for await (const chunk of stream) {
+            chunks.push(Buffer.from(chunk));
+          }
+          const pdfBuffer = Buffer.concat(chunks);
+          const fileName = sanitizeFileName(
+            `Contract_${fullContract.contractCode || fullContract.id}_Signed.pdf`,
+            "contract-signed.pdf"
+          );
+
+          // Bắt lỗi upload nhưng KHÔNG làm fail toàn bộ giao dịch ký
+          try {
+            const saveRes = await saveFileLocally(pdfBuffer, fileName, "contracts");
+            // Cập nhật link file đã ký vào contract
+            await prisma.contract.update({
+              where: { id: contractId },
+              data: { signedFileUrl: saveRes.fileUrl }
+            });
+            await prisma.contractDocument.create({
+              data: {
+                contractId,
+                documentType: "SIGNED_CONTRACT_PDF",
+                fileName,
+                fileUrl: saveRes.fileUrl,
+                version: 1,
+              },
+            });
+            console.log("✅ Đã lưu PDF hợp đồng xuống Local:", saveRes.fileUrl);
+
+            // Đồng bộ dữ liệu ra Google Sheets
+            await appendContractRow([
+              new Date().toLocaleString("vi-VN"), // Thời gian ký
+              fullContract.contractCode || fullContract.id, // Mã HĐ
+              fullContract.customer.name, // Tên khách
+              fullContract.customer.email || "", // Email
+              fullContract.totalAmount.toString(), // Tổng tiền
+              "Đã Ký", // Trạng thái
+              saveRes.fileUrl // Link PDF
+            ]);
+            console.log("✅ Đã đồng bộ Hợp đồng ra Google Sheets!");
+
+          } catch (driveErr: any) {
+            console.warn("⚠️ Không thể lưu PDF (Lỗi):", driveErr.message);
+          }
+        }
+      } catch (pdfErr) {
+        console.error("Lỗi khi tạo PDF hợp đồng:", pdfErr);
+      }
+    }
+
+    return { success: true, message: "Cảm ơn. Hợp đồng đã được ký thành công." };
+  } catch (err: any) {
+    console.error("[submitDrawnSignature]", err);
+    return { success: false, error: "Lỗi hệ thống khi xử lý chữ ký." };
+  }
+}
+
+
+/**
  * Reject a contract and request revision (CUSTOMER only).
  *
  * Validates the signing token, records the rejection reason, revokes the token,
@@ -347,4 +522,3 @@ export async function rejectContractSignature(
     };
   }
 }
-
